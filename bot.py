@@ -1,20 +1,24 @@
 import discord
 import responses
+from dotenv import dotenv_values
 
 
-# Send messages
-async def send_message(message, user_message, is_private):
+async def send_message(message, user_message):
     try:
         response = responses.handle_response(user_message)
-        await message.author.send(response) if is_private else await message.channel.send(response)
-
+        await message.channel.send(response)
     except Exception as e:
         print(e)
+        await message.channel.send("Sorry, I do not currently have a response for you.")
 
 
 def run_discord_bot():
-    TOKEN = 'YOUR_KEY'
-    client = discord.Client()
+    config = dotenv_values('.env')
+    TOKEN = config["TOKEN"]
+    intents = discord.Intents.default()
+    intents.message_content = True
+
+    client = discord.Client(intents=intents)
 
     @client.event
     async def on_ready():
@@ -22,24 +26,16 @@ def run_discord_bot():
 
     @client.event
     async def on_message(message):
-        # Make sure bot doesn't get stuck in an infinite loop
         if message.author == client.user:
             return
 
-        # Get data about the user
         username = str(message.author)
         user_message = str(message.content)
         channel = str(message.channel)
 
-        # Debug printing
         print(f"{username} said: '{user_message}' ({channel})")
 
-        # If the user message contains a '?' in front of the text, it becomes a private message
-        if user_message[0] == '?':
-            user_message = user_message[1:]  # [1:] Removes the '?'
-            await send_message(message, user_message, is_private=True)
-        else:
-            await send_message(message, user_message, is_private=False)
+        if user_message[0] == '!':
+            await send_message(message, user_message[1:])
 
-    # Remember to run your bot with your personal TOKEN
     client.run(TOKEN)
