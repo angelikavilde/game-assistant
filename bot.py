@@ -1,5 +1,7 @@
 """File that executes our bots functions"""
 
+import time
+
 import discord
 import requests
 from dotenv import dotenv_values
@@ -35,20 +37,18 @@ def run_discord_bot():
         # No response if it was a message by our bot
         if message.author == client.user:
             return
-
         user = str(message.author)
         msg = str(message.content).lower()
         channel = str(message.channel)
 
         print(f"{user} said: '{msg}' ({channel})")
 
+        greetings = ["hi","hello","hey","hola"]
+        bot = ["ga","gameassist"]
+
         if msg == "!joke":
-            request = requests.get("https://official-joke-api.appspot.com/jokes/programming/random")
-            joke = request.json()
-            await message.channel.send(joke[0]["setup"])
-            await message.channel.send(joke[0]["punchline"])
-            await message.delete()
-        elif "hi ga" in msg or "hello ga" in msg:
+            await send_joke(message)
+        elif any(word in msg for word in greetings) and any(word in msg for word in bot):
             await send_message(message, msg, user)
         elif msg[0] == "!":
             await send_message(message, msg[1:], user)
@@ -57,3 +57,11 @@ def run_discord_bot():
             await message.channel.send("Haha you're funny!")
 
     client.run(TOKEN)
+
+async def send_joke(message) -> None:
+    request = requests.get("https://official-joke-api.appspot.com/jokes/programming/random")
+    joke = request.json()
+    await message.delete()
+    await message.channel.send(joke[0]["setup"])
+    time.sleep(int(len(joke[0]["setup"])/10))
+    await message.channel.send(joke[0]["punchline"])
