@@ -39,9 +39,9 @@ def run_discord_bot():
             return
         user = str(message.author)
         msg = str(message.content).lower()
-        channel = str(message.channel)
+        chnl = str(message.channel)
 
-        print(f"{user} said: '{msg}' ({channel})")
+        print(f"{user} said: '{msg}' ({chnl})")
 
         greetings = ["hi","hello","hey","hola"]
         bot = ["ga","gameassist"]
