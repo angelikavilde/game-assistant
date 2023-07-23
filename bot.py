@@ -106,7 +106,7 @@ async def send_joke(message) -> None:
     joke = request.json()
     await message.delete()
     await message.channel.send(joke[0]["setup"])
-    asyncio.sleep(int(len(joke[0]["setup"])/10))
+    asyncio.sleep(5)
     await message.channel.send(joke[0]["punchline"])
 
 
@@ -117,7 +117,7 @@ async def handle_event_responses(message, msg: str):
         await message.channel.send(msg)
     except Exception as e:
         print(e)
-        await message.channel.send("This is not an allowed command for this event. Try '/h' for help!")
+        await message.channel.send("This is not an allowed command for this event. Try '//h' for help!")
 
 
 async def timeout(message):
@@ -131,13 +131,14 @@ def r_p_s(user_chose: str, user: str):
     global rock_paper_scissors_event, users_playing
     choices = ["rock","paper","scissors"]
     bot_chose = random.choice(choices)
+    user_chose = user_chose.replace(" ", "")
     if user_chose == "play":
         users_playing = []
         users_playing.append(user)
         return "`I have made my next choice!`"
-    if user_chose[2:].replace(" ", "") in choices:
+    if user_chose[2:] in choices:
         text = "`"
-        user_chose = user_chose[2:].replace(" ", "")
+        user_chose = user_chose[2:]
         if user not in users_playing:
             text += "Although you were not the user that has started the game, we can still play. "
         if bot_chose == user_chose:
@@ -147,7 +148,14 @@ def r_p_s(user_chose: str, user: str):
         else:
             return text + f"I chose {bot_chose}. You win!`"
     if user_chose == "//h":
-        return "-"
+        return """```
+        Bot makes a choice before player. Run:
+        //paper - to choose paper
+        //rock - to choose rock
+        //scissors - to choose scissors
+        //q to finish the game
+        * Spaces do not count and it is _not_ case sensitive.
+        ```"""
     if user_chose == "//q":
         # finishes the game
         rock_paper_scissors_event = False
