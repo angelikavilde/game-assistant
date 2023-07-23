@@ -1,6 +1,5 @@
 """File that executes our bots functions"""
 
-import time
 import random
 
 import discord
@@ -81,7 +80,7 @@ def run_discord_bot():
             elif rock_paper_scissors_event:
                 response = r_p_s(msg, user)
                 await handle_event_responses(message, response)
-                if message != "//q":
+                if msg != "//q":
                     await asyncio.sleep(2)
                     response = r_p_s("play", user)
                     await handle_event_responses(message, response)
@@ -96,6 +95,8 @@ def run_discord_bot():
             await message.delete()
         elif "lol" in msg:
             await message.channel.send("Haha you're funny!")
+        elif "love" in msg and any(word in msg for word in bot_names):
+            await message.channel.send(":heart:") #sends heart emoji
 
     client.run(TOKEN)
 
@@ -105,7 +106,7 @@ async def send_joke(message) -> None:
     joke = request.json()
     await message.delete()
     await message.channel.send(joke[0]["setup"])
-    time.sleep(int(len(joke[0]["setup"])/10))
+    asyncio.sleep(int(len(joke[0]["setup"])/10))
     await message.channel.send(joke[0]["punchline"])
 
 
@@ -138,13 +139,13 @@ def r_p_s(user_chose: str, user: str):
         text = "`"
         user_chose = user_chose[2:].replace(" ", "")
         if user not in users_playing:
-            text += "Although you were not the one to start the game, we can still play. "
+            text += "Although you were not the user that has started the game, we can still play. "
         if bot_chose == user_chose:
-            return text + f"We tie! I also chose {bot_chose}`"
+            return text + f"I also chose {bot_chose}. We tie!`"
         elif (user_chose,bot_chose) in [("scissors","rock"),("rock","paper"),("paper","scissors")]:
-            return text + f"You lose! I chose {bot_chose}`"
+            return text + f"I chose {bot_chose}. You lose!`"
         else:
-            return text + f"You win! I chose {bot_chose}`"
+            return text + f"I chose {bot_chose}. You win!`"
     if user_chose == "//h":
         return "-"
     if user_chose == "//q":
@@ -199,5 +200,5 @@ Team 2: {team2}; Captain: {random.choice(team2)}```"""
 async def start_among_us():
 
     #shuts off automatically if not used
-    time.sleep(2400)
+    asyncio.sleep(2400)
     """"""
