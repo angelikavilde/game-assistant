@@ -10,14 +10,14 @@ from dotenv import dotenv_values
 
 import responses
 
-codename_event = False
+codename_event, rock_paper_scissors_event = False, False
 timeout_task = 0
 users_playing = []
 
-async def send_message(message, user_message: str, user: str) -> None:
+async def send_message(message, user_message: str) -> None:
     """Sends an appropriate response to a query sent with '!' """
     try:
-        response = responses.handle_response(user_message, user)
+        response = responses.handle_response(user_message)
         await message.channel.send(response)
     except Exception as e:
         print(e)
@@ -40,7 +40,7 @@ def run_discord_bot():
 
     @client.event
     async def on_message(message):
-        global codename_event, timeout_task
+        global codename_event, timeout_task, rock_paper_scissors_event
         # No response if it was a message by our bot
         if message.author == client.user:
             return
@@ -64,17 +64,35 @@ def run_discord_bot():
                     else:
                         codename_event = True
                         await message.channel.send("`CodeNames event was started!`")
+                case "rps":
+                    if rock_paper_scissors_event:
+                        await message.channel.send("`Rock-Paper-Scissors event is already running!`")
+                    else:
+                        rock_paper_scissors_event = True
+                        await message.channel.send("`Rock-Paper-Scissors event was started!`")
+                        await asyncio.sleep(2)
+                        response = r_p_s("play", user)
+                        await handle_event_responses(message, response)
         elif msg[0:2] == "//":
             if codename_event:
-                response = start_codenames(message, msg,user)
+                response = start_codenames(message, msg, user)
                 await handle_event_responses(message, response)
                 await message.delete()
+            elif rock_paper_scissors_event:
+                response = r_p_s(msg, user)
+                await handle_event_responses(message, response)
+                if message != "//q":
+                    await asyncio.sleep(2)
+                    response = r_p_s("play", user)
+                    await handle_event_responses(message, response)
         elif msg == "!joke":
             await send_joke(message)
         elif any(word in msg for word in greetings) and any(word in msg for word in bot_names):
-            await send_message(message, msg, user)
+            await message.channel.send(f"""```json
+            "Hi {user} <3"
+            ```""")
         elif msg[0] == "!":
-            await send_message(message, msg[1:], user)
+            await send_message(message, msg[1:])
             await message.delete()
         elif "lol" in msg:
             await message.channel.send("Haha you're funny!")
@@ -103,9 +121,36 @@ async def handle_event_responses(message, msg: str):
 
 async def timeout(message):
     await asyncio.sleep(20)
-    response =  start_codenames(message, "//q", "timer")
+    """response =  start_codenames(message, "//q", "timer")
     print("finished")
-    await message.channel.send(response)
+    await message.channel.send(response)"""
+
+
+def r_p_s(user_chose: str, user: str):
+    global rock_paper_scissors_event, users_playing
+    choices = ["rock","paper","scissors"]
+    bot_chose = random.choice(choices)
+    if user_chose == "play":
+        users_playing = []
+        users_playing.append(user)
+        return "`I have made my next choice!`"
+    if user_chose[2:].replace(" ", "") in choices:
+        text = "`"
+        user_chose = user_chose[2:].replace(" ", "")
+        if user not in users_playing:
+            text += "Although you were not the one to start the game, we can still play. "
+        if bot_chose == user_chose:
+            return text + f"We tie! I also chose {bot_chose}`"
+        elif (user_chose,bot_chose) in [("scissors","rock"),("rock","paper"),("paper","scissors")]:
+            return text + f"You lose! I chose {bot_chose}`"
+        else:
+            return text + f"You win! I chose {bot_chose}`"
+    if user_chose == "//h":
+        return "-"
+    if user_chose == "//q":
+        # finishes the game
+        rock_paper_scissors_event = False
+        return "`Rock-Paper-Scissors event was ended!`"
 
 
 #starts an event which allows to add yourself to it and it'll print out the teams.
@@ -138,8 +183,8 @@ def start_codenames(message, user_chose: str, user: str) -> str:
         team2 = []
         for _ in range(int(len(users_playing)/2)):
             team2.append(team1.pop(team1.index(random.choice(team1))))
-        teams = f"""``` Team 1: {team1}; Captain: {random.choice(team1)}
- Team 2: {team2}; Captain: {random.choice(team2)}```"""
+        teams = f"""```Team 1: {team1}; Captain: {random.choice(team1)}
+Team 2: {team2}; Captain: {random.choice(team2)}```"""
         return teams
     if user_chose == "//h":
         # return help about this event
