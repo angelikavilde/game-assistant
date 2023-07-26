@@ -1,6 +1,6 @@
 """File that executes our bots functions"""
 
-import random
+import random, io, aiohttp
 
 import discord
 import requests
@@ -86,6 +86,19 @@ def run_discord_bot():
                     await handle_event_responses(message, response)
         elif msg == "!joke":
             await send_joke(message)
+        elif msg == "!mute":
+            voice_channel = discord.utils.get(message.guild.channels, name="test1")
+
+            if voice_channel:
+                overwrite = voice_channel.overwrites_for(message.author)
+                overwrite.update(mute=True)
+                await voice_channel.set_permissions(message.author, overwrite=overwrite)
+        elif msg == "!meme":
+            url = send_meme()
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    data = io.BytesIO(await resp.read())
+                    await message.channel.send(file=discord.File(data, 'cool_image.png'))
         elif any(word in msg for word in greetings) and any(word in msg for word in bot_names):
             await message.channel.send(f"""```json
             "Hi {user} <3"
@@ -93,18 +106,25 @@ def run_discord_bot():
         elif msg[0] == "!":
             await send_message(message, msg[1:])
             await message.delete()
-        elif "lol" in msg:
-            await message.channel.send("Haha you're funny!")
+        elif "lol" in msg or "XD" in msg:
+            await message.add_reaction("😂")
         elif "love" in msg and any(word in msg for word in bot_names):
-            await message.channel.send(":heart:") #sends heart emoji
+            await message.channel.send(":heart:", reference=message) #sends heart emoji
 
     client.run(TOKEN)
 
 
+def send_meme() -> None:
+    request = requests.get("https://api.imgflip.com/get_memes")
+    memes = (request.json())["data"]["memes"]
+    n_memes_max = len(memes)
+    meme = memes[random.randint(0,n_memes_max-1)]["url"]
+    return meme
+    
+
 async def send_joke(message) -> None:
     request = requests.get("https://official-joke-api.appspot.com/jokes/programming/random")
     joke = request.json()
-    await message.delete()
     await message.channel.send(joke[0]["setup"])
     asyncio.sleep(5)
     await message.channel.send(joke[0]["punchline"])
@@ -148,14 +168,13 @@ def r_p_s(user_chose: str, user: str):
         else:
             return text + f"I chose {bot_chose}. You win!`"
     if user_chose == "//h":
-        return """```
+        return """
         Bot makes a choice before player. Run:
         //paper - to choose paper
         //rock - to choose rock
         //scissors - to choose scissors
         //q to finish the game
-        * Spaces do not count and it is _not_ case sensitive.
-        ```"""
+        * Spaces do not count and it is _not_ case sensitive."""
     if user_chose == "//q":
         # finishes the game
         rock_paper_scissors_event = False
