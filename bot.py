@@ -1,6 +1,6 @@
 """File that executes our bots functions"""
 
-import random, io, aiohttp
+import random
 
 import discord
 import requests
@@ -12,6 +12,7 @@ import responses
 codename_event, rock_paper_scissors_event = False, False
 timeout_task = 0
 users_playing = []
+bot_message = None
 
 async def send_message(message, user_message: str) -> None:
     """Sends an appropriate response to a query sent with '!' """
@@ -26,7 +27,7 @@ async def send_message(message, user_message: str) -> None:
 def run_discord_bot():
     """Function that runs the bot with provided key,
     and listens to messages."""
-    config = dotenv_values('.env')
+    config = dotenv_values()
     TOKEN = config["TOKEN"]
     intents = discord.Intents.default()
     intents.message_content = True
@@ -39,10 +40,14 @@ def run_discord_bot():
 
     @client.event
     async def on_message(message):
-        global codename_event, timeout_task, rock_paper_scissors_event
+        global codename_event, timeout_task, rock_paper_scissors_event, bot_message
         # No response if it was a message by our bot
         if message.author == client.user:
+            bot_message = message # for killing last bots message
             return
+
+        # response = discord.Embed(title="Event was started:", description="* Codenames", color=discord.Colour(value=0x8f3ea3))
+        # await message.channel.send(embed=response)
 
         user = str(message.author)
         msg = str(message.content).lower()
@@ -53,9 +58,16 @@ def run_discord_bot():
         greetings = ["hi", "hello", "hey", "hola"]
         bot_names = ["ga", "gameassist", "bot"]
 
+        if msg == "!kill":
+            await bot_message.delete()
+            await message.delete()
+        if msg == "try":
+            pass
         if msg[:6] == "!play ":
             #TODO make sure timeout task is cancelled if no appropriate game was chosen
             timeout_task = asyncio.create_task(timeout(message))
+            if any([codename_event, rock_paper_scissors_event]):
+                await message.channel.send("`There is already an event running. //h for event info or //q to finish!`")
             match msg[6:]:
                 case "codenames":
                     if codename_event:
@@ -90,15 +102,12 @@ def run_discord_bot():
             voice_channel = discord.utils.get(message.guild.channels, name="test1")
 
             if voice_channel:
-                overwrite = voice_channel.overwrites_for(message.author)
-                overwrite.update(mute=True)
-                await voice_channel.set_permissions(message.author, overwrite=overwrite)
-        elif msg == "!meme":
-            url = send_meme()
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
-                    data = io.BytesIO(await resp.read())
-                    await message.channel.send(file=discord.File(data, 'cool_image.png'))
+                role = discord.utils.get(message.guild.roles, name="Muted")
+                await message.author.add_roles(role)
+                await message.guild.change_voice_state(channel=voice_channel, self_mute=True, self_deaf=False)
+        elif msg == "!unmute":
+            role = discord.utils.get(message.guild.roles, name="Muted")
+            await message.author.remove_roles(role)
         elif any(word in msg for word in greetings) and any(word in msg for word in bot_names):
             await message.channel.send(f"""```json
             "Hi {user} <3"
@@ -109,18 +118,10 @@ def run_discord_bot():
         elif "lol" in msg or "XD" in msg:
             await message.add_reaction("😂")
         elif "love" in msg and any(word in msg for word in bot_names):
-            await message.channel.send(":heart:", reference=message) #sends heart emoji
+            await message.channel.send(":heart:", reference=message) #replies with heart emoji
 
     client.run(TOKEN)
 
-
-def send_meme() -> None:
-    request = requests.get("https://api.imgflip.com/get_memes")
-    memes = (request.json())["data"]["memes"]
-    n_memes_max = len(memes)
-    meme = memes[random.randint(0,n_memes_max-1)]["url"]
-    return meme
-    
 
 async def send_joke(message) -> None:
     request = requests.get("https://official-joke-api.appspot.com/jokes/programming/random")
@@ -141,22 +142,25 @@ async def handle_event_responses(message, msg: str):
 
 
 async def timeout(message):
-    await asyncio.sleep(20)
+    #await asyncio.sleep(20)
     """response =  start_codenames(message, "//q", "timer")
     print("finished")
     await message.channel.send(response)"""
 
 
-def r_p_s(user_chose: str, user: str):
+def r_p_s(user_chose: str, user: str) -> str:
+    """Bot plays rock-paper-scissors against a player"""
     global rock_paper_scissors_event, users_playing
     choices = ["rock","paper","scissors"]
     bot_chose = random.choice(choices)
     user_chose = user_chose.replace(" ", "")
     if user_chose == "play":
+        # adds user to the game
         users_playing = []
         users_playing.append(user)
         return "`I have made my next choice!`"
     if user_chose[2:] in choices:
+        # game play
         text = "`"
         user_chose = user_chose[2:]
         if user not in users_playing:
@@ -168,12 +172,13 @@ def r_p_s(user_chose: str, user: str):
         else:
             return text + f"I chose {bot_chose}. You win!`"
     if user_chose == "//h":
+        # returns help for the event
         return """
         Bot makes a choice before player. Run:
-        //paper - to choose paper
-        //rock - to choose rock
-        //scissors - to choose scissors
-        //q to finish the game
+        * //paper - to choose paper
+        * //rock - to choose rock
+        * //scissors - to choose scissors
+        * //q to finish the game
         * Spaces do not count and it is _not_ case sensitive."""
     if user_chose == "//q":
         # finishes the game
@@ -181,7 +186,6 @@ def r_p_s(user_chose: str, user: str):
         return "`Rock-Paper-Scissors event was ended!`"
 
 
-#starts an event which allows to add yourself to it and it'll print out the teams.
 def start_codenames(message, user_chose: str, user: str) -> str:
     global codename_event, users_playing, timeout_task
     timeout_task.cancel()
@@ -193,7 +197,7 @@ def start_codenames(message, user_chose: str, user: str) -> str:
     if user_chose == "//j":
         # adds the user to the game
         if user in users_playing:
-            return f"`{user} has already joined the CodeNames event!`"
+            return f"`Cannot join! {user} has already joined the CodeNames event!`"
         users_playing.append(user)
         return f"`{user} was successfully added to the CodeNames event!`"
     if user_chose == "//l":
@@ -202,8 +206,8 @@ def start_codenames(message, user_chose: str, user: str) -> str:
             users_playing.remove(user)
             return f"`{user} successfully left CodeNames event!`"
         else:
-            return f"`{user} did not enter the game. '//j' to join!`"
-    if user_chose == "//s":
+            return f"`Cannot leave! {user} did not enter the game. '//j' to join!`"
+    if user_chose == "//t":
         # game is started
         if len(users_playing) < 4:
             return "`This game is designed for minimum of 4 people. Preferably 6 or more. Add more players!`"
@@ -216,7 +220,12 @@ Team 2: {team2}; Captain: {random.choice(team2)}```"""
         return teams
     if user_chose == "//h":
         # return help about this event
-        return "-"
+        return """__Run:__
+* //j - To join the event (will tell you if already joined)
+* //l - To leave the event (this and below will tell you if not joined)
+* //d x - To delete a player x from the game
+* //t - To make teams
+* //q - To finish the event"""
     if user_chose == "//q":
         # finishes the game
         codename_event = False
