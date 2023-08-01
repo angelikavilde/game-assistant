@@ -9,8 +9,7 @@ from dotenv import dotenv_values
 
 import responses
 
-codename_event, rock_paper_scissors_event = False, False
-timeout_task = 0
+codename_event, rock_paper_scissors_event, amongus_event = False, False, False
 users_playing = []
 bot_message = None
 
@@ -40,14 +39,12 @@ def run_discord_bot():
 
     @client.event
     async def on_message(message):
-        global codename_event, timeout_task, rock_paper_scissors_event, bot_message
+        global codename_event, rock_paper_scissors_event, bot_message
+        global amongus_event
         # No response if it was a message by our bot
         if message.author == client.user:
             bot_message = message # for killing last bots message
             return
-
-        # response = discord.Embed(title="Event was started:", description="* Codenames", color=discord.Colour(value=0x8f3ea3))
-        # await message.channel.send(embed=response)
 
         user = str(message.author)
         msg = str(message.content).lower()
@@ -58,15 +55,11 @@ def run_discord_bot():
         greetings = ["hi", "hello", "hey", "hola"]
         bot_names = ["ga", "gameassist", "bot"]
 
-        if msg == "!kill":
-            await bot_message.delete()
-            await message.delete()
-        if msg == "try":
-            pass
+        # if msg == "try":
+        #     role = discord.utils.get(message.guild.roles, name="Muted")
+        #     await message.author.remove_roles(role)
         if msg[:6] == "!play ":
-            #TODO make sure timeout task is cancelled if no appropriate game was chosen
-            timeout_task = asyncio.create_task(timeout(message))
-            if any([codename_event, rock_paper_scissors_event]):
+            if any([codename_event, rock_paper_scissors_event, amongus_event]):
                 await message.channel.send("`There is already an event running. //h for event info or //q to finish!`")
             match msg[6:]:
                 case "codenames":
@@ -86,7 +79,7 @@ def run_discord_bot():
                         await handle_event_responses(message, response)
         elif msg[0:2] == "//":
             if codename_event:
-                response = start_codenames(message, msg, user)
+                response = start_codenames(msg, user)
                 await handle_event_responses(message, response)
                 await message.delete()
             elif rock_paper_scissors_event:
@@ -96,22 +89,17 @@ def run_discord_bot():
                     await asyncio.sleep(2)
                     response = r_p_s("play", user)
                     await handle_event_responses(message, response)
+            elif amongus_event:
+                await start_among_us(message, msg)
         elif msg == "!joke":
             await send_joke(message)
-        elif msg == "!mute":
-            voice_channel = discord.utils.get(message.guild.channels, name="test1")
-
-            if voice_channel:
-                role = discord.utils.get(message.guild.roles, name="Muted")
-                await message.author.add_roles(role)
-                await message.guild.change_voice_state(channel=voice_channel, self_mute=True, self_deaf=False)
-        elif msg == "!unmute":
-            role = discord.utils.get(message.guild.roles, name="Muted")
-            await message.author.remove_roles(role)
         elif any(word in msg for word in greetings) and any(word in msg for word in bot_names):
             await message.channel.send(f"""```json
             "Hi {user} <3"
             ```""")
+        elif msg == "!kill":
+            await bot_message.delete()
+            await message.delete()
         elif msg[0] == "!":
             await send_message(message, msg[1:])
             await message.delete()
@@ -139,13 +127,6 @@ async def handle_event_responses(message, msg: str):
     except Exception as e:
         print(e)
         await message.channel.send("This is not an allowed command for this event. Try '//h' for help!")
-
-
-async def timeout(message):
-    #await asyncio.sleep(20)
-    """response =  start_codenames(message, "//q", "timer")
-    print("finished")
-    await message.channel.send(response)"""
 
 
 def r_p_s(user_chose: str, user: str) -> str:
@@ -186,10 +167,8 @@ def r_p_s(user_chose: str, user: str) -> str:
         return "`Rock-Paper-Scissors event was ended!`"
 
 
-def start_codenames(message, user_chose: str, user: str) -> str:
-    global codename_event, users_playing, timeout_task
-    timeout_task.cancel()
-    timeout_task = asyncio.create_task(timeout(message))
+def start_codenames(user_chose: str, user: str) -> str:
+    global codename_event, users_playing
     if user_chose[:4] == "//d ":
         # allows to delete another user from the game
         user = user_chose[4:]
@@ -233,8 +212,37 @@ Team 2: {team2}; Captain: {random.choice(team2)}```"""
         return "`CodeNames event was ended!`"
 
 
-async def start_among_us():
+async def start_among_us(message, user_chose: str) -> None:
+    global users_playing, amongus_event
+    
+    if user_chose == "play":
+        # game embed is shown and bot joins the call
+        voice_channel = discord.utils.get(message.guild.channels, name="Meeting Time")
+        if voice_channel:
+            await message.guild.change_voice_state(channel=voice_channel, self_mute=True, self_deaf=False)
+        response = discord.Embed(title="Event was started:", description="* Among Us", color=discord.Colour(value=0x8f3ea3))
+        response.set_image(url="https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372")
+        await message.channel.send(embed=response)
+    if user_chose == "//d":
+        # player has died and was given a dead role
+        await users_playing.append(message.author)
+        member_role_changed(message, message.author, True)
+        await message.channel.send(f"`{str(message.author)} has been announced dead!`")
+    if user_chose == "//n":
+        # new game starts so all users' roles are reset
+        for member in users_playing:
+            await member_role_changed(message, member, False)
+        await message.channel.send("`AmongUs event was restarted!`")
+    if user_chose == "//q":
+        # finishes the game
+        amongus_event = False
+        users_playing = []
+        await message.channel.send("`AmongUs event was ended!`")
 
-    #shuts off automatically if not used
-    asyncio.sleep(2400)
-    """"""
+async def member_role_changed(message, user, add: bool) -> None:
+    """Gives a user a Dead Crewmate role or removes it"""
+    role = discord.utils.get(message.guild.roles, name="Dead Crewmate")
+    if add:
+        await user.add_roles(role)
+    else:
+        await user.remove_roles(role)
