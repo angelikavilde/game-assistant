@@ -8,6 +8,7 @@ import asyncio
 from dotenv import dotenv_values
 
 import responses
+import easter_egg
 
 codename_event, rock_paper_scissors_event, amongus_event = False, False, False
 users_playing = []
@@ -42,7 +43,7 @@ def run_discord_bot():
         global amongus_event
         # No response if it was a message by our bot
         if message.author == client.user:
-            # bot_message = message # for killing last bots message
+            bot_message = message # for killing last bots message
             return
 
         user = str(message.author)
@@ -50,9 +51,6 @@ def run_discord_bot():
         chnl = str(message.channel)
 
         print(f"{user} said: '{msg}' ({chnl})")
-
-        greetings = ["hi", "hello", "hey", "hola"]
-        bot_names = ["ga", "gameassist", "bot"]
 
         if msg[:6] == "!play ":
             await play_event_run(message, msg[6:])
@@ -75,21 +73,14 @@ def run_discord_bot():
                 await message.channel.send("`Double slash commands only work for events. There is no event running!`")
         elif msg == "!joke":
             await send_joke(message)
-        elif any(word in msg for word in greetings) and any(word in msg for word in bot_names):
-            await message.channel.send(f"""```json
-            "Hi {user} <3"
-            ```""", reference=message)
-        # elif msg == "!kill":
-        #     await bot_message.delete()
-        #     await message.delete()
+        elif msg == "!kill":
+            await bot_message.delete()
+            await message.delete()
         elif msg[0] == "!":
             await send_message(message, msg[1:])
             await message.delete()
-        elif "lol" in msg or "xd" in msg or '💀' in msg or "😂" in msg:
-            await message.add_reaction("😂")
-        elif "love" in msg and any(word in msg for word in bot_names):
-            await message.channel.send(":heart:", reference=message) #replies with heart emoji
-
+        else:
+            await easter_egg(message, msg)
     client.run(TOKEN)
 
 
@@ -97,7 +88,7 @@ async def send_joke(message) -> None:
     request = requests.get("https://official-joke-api.appspot.com/jokes/programming/random")
     joke = request.json()
     await message.channel.send(joke[0]["setup"])
-    asyncio.sleep(5)
+    await asyncio.sleep(3)
     await message.channel.send(joke[0]["punchline"])
 
 
