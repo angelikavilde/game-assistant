@@ -70,7 +70,8 @@ def run_discord_bot():
                 await message.delete()
                 await start_among_us(message, msg)
             else:
-                await message.channel.send("`Double slash commands only work for events. There is no event running!`")
+                await message.channel.send("""`Double slash commands only work for events.
+             There is no event running! !h or !help for event list.`""")
         elif msg == "!joke":
             await send_joke(message)
         elif msg == "!kill":
