@@ -58,9 +58,9 @@ def run_discord_bot():
             await play_event_run(message, msg[6:])
         elif msg[0:2] == "//":
             if codename_event:
+                await message.delete()
                 response = start_codenames(msg, user)
                 await handle_event_responses(message, response)
-                await message.delete()
             elif rock_paper_scissors_event:
                 response = r_p_s(msg, user)
                 await handle_event_responses(message, response)
@@ -69,7 +69,10 @@ def run_discord_bot():
                     response = r_p_s("play", user)
                     await handle_event_responses(message, response)
             elif amongus_event:
+                await message.delete()
                 await start_among_us(message, msg)
+            else:
+                await message.channel.send("`Double slash commands only work for events. There is no event running!`")
         elif msg == "!joke":
             await send_joke(message)
         elif any(word in msg for word in greetings) and any(word in msg for word in bot_names):
@@ -82,7 +85,7 @@ def run_discord_bot():
         elif msg[0] == "!":
             await send_message(message, msg[1:])
             await message.delete()
-        elif "lol" in msg or "xd" in msg:
+        elif "lol" in msg or "xd" in msg or '💀' in msg or "😂" in msg:
             await message.add_reaction("😂")
         elif "love" in msg and any(word in msg for word in bot_names):
             await message.channel.send(":heart:", reference=message) #replies with heart emoji
@@ -225,6 +228,7 @@ async def member_role_changed(message, user, add: bool) -> None:
 
 async def play_event_run(message, msg:str) -> None:
     """Handles the event start"""
+    global codename_event, rock_paper_scissors_event, amongus_event
     if any([codename_event, rock_paper_scissors_event, amongus_event]):
         await message.channel.send("`There is already an event running. //h for event info or //q to finish!`")
         return
