@@ -30,7 +30,6 @@ def run_discord_bot():
     TOKEN = config["TOKEN"]
     intents = discord.Intents.default()
     intents.message_content = True
-
     client = discord.Client(intents=intents)
 
     @client.event
@@ -43,7 +42,7 @@ def run_discord_bot():
         global amongus_event
         # No response if it was a message by our bot
         if message.author == client.user:
-            bot_message = message # for killing last bots message
+            # bot_message = message # for killing last bots message
             return
 
         user = str(message.author)
@@ -55,28 +54,8 @@ def run_discord_bot():
         greetings = ["hi", "hello", "hey", "hola"]
         bot_names = ["ga", "gameassist", "bot"]
 
-        # if msg == "try":
-        #     role = discord.utils.get(message.guild.roles, name="Muted")
-        #     await message.author.remove_roles(role)
         if msg[:6] == "!play ":
-            if any([codename_event, rock_paper_scissors_event, amongus_event]):
-                await message.channel.send("`There is already an event running. //h for event info or //q to finish!`")
-            match msg[6:]:
-                case "codenames":
-                    if codename_event:
-                        await message.channel.send("`CodeNames event is already running!`")
-                    else:
-                        codename_event = True
-                        await message.channel.send("`CodeNames event was started!`")
-                case "rps":
-                    if rock_paper_scissors_event:
-                        await message.channel.send("`Rock-Paper-Scissors event is already running!`")
-                    else:
-                        rock_paper_scissors_event = True
-                        await message.channel.send("`Rock-Paper-Scissors event was started!`")
-                        await asyncio.sleep(2)
-                        response = r_p_s("play", user)
-                        await handle_event_responses(message, response)
+            await play_event_run(message, msg[6:])
         elif msg[0:2] == "//":
             if codename_event:
                 response = start_codenames(msg, user)
@@ -96,14 +75,14 @@ def run_discord_bot():
         elif any(word in msg for word in greetings) and any(word in msg for word in bot_names):
             await message.channel.send(f"""```json
             "Hi {user} <3"
-            ```""")
-        elif msg == "!kill":
-            await bot_message.delete()
-            await message.delete()
+            ```""", reference=message)
+        # elif msg == "!kill":
+        #     await bot_message.delete()
+        #     await message.delete()
         elif msg[0] == "!":
             await send_message(message, msg[1:])
             await message.delete()
-        elif "lol" in msg or "XD" in msg:
+        elif "lol" in msg or "xd" in msg:
             await message.add_reaction("😂")
         elif "love" in msg and any(word in msg for word in bot_names):
             await message.channel.send(":heart:", reference=message) #replies with heart emoji
@@ -168,6 +147,7 @@ def r_p_s(user_chose: str, user: str) -> str:
 
 
 def start_codenames(user_chose: str, user: str) -> str:
+    """CodeNames event function"""
     global codename_event, users_playing
     if user_chose[:4] == "//d ":
         # allows to delete another user from the game
@@ -213,31 +193,26 @@ Team 2: {team2}; Captain: {random.choice(team2)}```"""
 
 
 async def start_among_us(message, user_chose: str) -> None:
+    """AmongUs event function"""
     global users_playing, amongus_event
-    
-    if user_chose == "play":
-        # game embed is shown and bot joins the call
-        voice_channel = discord.utils.get(message.guild.channels, name="Meeting Time")
-        if voice_channel:
-            await message.guild.change_voice_state(channel=voice_channel, self_mute=True, self_deaf=False)
-        response = discord.Embed(title="Event was started:", description="* Among Us", color=discord.Colour(value=0x8f3ea3))
-        response.set_image(url="https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372")
-        await message.channel.send(embed=response)
     if user_chose == "//d":
         # player has died and was given a dead role
-        await users_playing.append(message.author)
-        member_role_changed(message, message.author, True)
+        users_playing.append(message.author)
+        await member_role_changed(message, message.author, True)
         await message.channel.send(f"`{str(message.author)} has been announced dead!`")
     if user_chose == "//n":
         # new game starts so all users' roles are reset
         for member in users_playing:
             await member_role_changed(message, member, False)
         await message.channel.send("`AmongUs event was restarted!`")
+    if user_chose == "//h":
+        await message.channel.send("-")
     if user_chose == "//q":
         # finishes the game
         amongus_event = False
         users_playing = []
         await message.channel.send("`AmongUs event was ended!`")
+
 
 async def member_role_changed(message, user, add: bool) -> None:
     """Gives a user a Dead Crewmate role or removes it"""
@@ -246,3 +221,37 @@ async def member_role_changed(message, user, add: bool) -> None:
         await user.add_roles(role)
     else:
         await user.remove_roles(role)
+
+
+async def play_event_run(message, msg:str) -> None:
+    """Handles the event start"""
+    if any([codename_event, rock_paper_scissors_event, amongus_event]):
+        await message.channel.send("`There is already an event running. //h for event info or //q to finish!`")
+        return
+    match msg:
+        case "codenames":
+            if codename_event:
+                await message.channel.send("`CodeNames event is already running!`")
+            else:
+                codename_event = True
+                await message.channel.send("`CodeNames event was started!`")
+        case "rps":
+            if rock_paper_scissors_event:
+                await message.channel.send("`Rock-Paper-Scissors event is already running!`")
+            else:
+                rock_paper_scissors_event = True
+                await message.channel.send("`Rock-Paper-Scissors event was started!`")
+                await asyncio.sleep(2)
+                response = r_p_s("play", str(message.author))
+                await handle_event_responses(message, response)
+        case "amongus":
+            if amongus_event:
+                await message.channel.send("`AmongUs event is already running!`")
+            else:
+                amongus_event = True
+                voice_channel = discord.utils.get(message.guild.channels, name="Meeting Time")
+                if voice_channel:
+                    await message.guild.change_voice_state(channel=voice_channel, self_mute=True, self_deaf=False)
+                response = discord.Embed(title="Event was started:", description="* Among Us", color=discord.Colour(value=0x8f3ea3))
+                response.set_image(url="https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372")
+                await message.channel.send(embed=response)
