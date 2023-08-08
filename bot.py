@@ -8,11 +8,12 @@ import asyncio
 from dotenv import dotenv_values
 
 import responses
-import easter_egg
+from easter_egg import easter_egg_func
 
 codename_event, rock_paper_scissors_event, amongus_event = False, False, False
 users_playing = []
 bot_message = None
+
 
 async def send_message(message, user_message: str) -> None:
     """Sends an appropriate response to a query sent with '!' """
@@ -45,7 +46,9 @@ def run_discord_bot():
         if message.author == client.user:
             bot_message = message # for killing last bots message
             return
-
+        if message.content == "":
+            # to kill errors with an empty message/image
+            return
         user = str(message.author)
         msg = str(message.content).lower()
         chnl = str(message.channel)
@@ -71,17 +74,17 @@ def run_discord_bot():
                 await start_among_us(message, msg)
             else:
                 await message.channel.send("""`Double slash commands only work for events.
-             There is no event running! !h or !help for event list.`""")
+There is no event running! !h or !help for event list.`""")
         elif msg == "!joke":
             await send_joke(message)
         elif msg == "!kill":
+            await message.delete()
             await bot_message.delete()
-            await message.delete()
         elif msg[0] == "!":
-            await send_message(message, msg[1:])
             await message.delete()
+            await send_message(message, msg[1:])
         else:
-            await easter_egg(message, msg)
+            await easter_egg_func(message, msg)
     client.run(TOKEN)
 
 
@@ -192,16 +195,22 @@ async def start_among_us(message, user_chose: str) -> None:
     global users_playing, amongus_event
     if user_chose == "//d":
         # player has died and was given a dead role
-        users_playing.append(message.author)
-        await member_role_changed(message, message.author, True)
-        await message.channel.send(f"`{str(message.author)} has been announced dead!`")
+        if not message.author in users_playing:
+            users_playing.append(message.author)
+            await member_role_changed(message, message.author, True)
+            await message.channel.send(f"`{str(message.author)} has been announced dead!`")
+        else:
+            await message.channel.send(f"`{str(message.author)} is already laying in the grave!`")
     if user_chose == "//n":
         # new game starts so all users' roles are reset
         for member in users_playing:
             await member_role_changed(message, member, False)
         await message.channel.send("`AmongUs event was restarted!`")
     if user_chose == "//h":
-        await message.channel.send("-")
+        await message.channel.send("""AmongUs event commands:
+* //d - pronounce yourself dead
+* //n - resets the game
+* //q - finishes the game""")
     if user_chose == "//q":
         # finishes the game
         amongus_event = False
@@ -245,9 +254,9 @@ async def play_event_run(message, msg:str) -> None:
                 await message.channel.send("`AmongUs event is already running!`")
             else:
                 amongus_event = True
-                voice_channel = discord.utils.get(message.guild.channels, name="Meeting Time")
-                if voice_channel:
-                    await message.guild.change_voice_state(channel=voice_channel, self_mute=True, self_deaf=False)
+                # voice_channel = discord.utils.get(message.guild.channels, name="Meeting Time")
+                # if voice_channel:
+                #     await message.guild.change_voice_state(channel=voice_channel, self_mute=True, self_deaf=False)
                 response = discord.Embed(title="Event was started:", description="* Among Us", color=discord.Colour(value=0x8f3ea3))
                 response.set_image(url="https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372")
                 await message.channel.send(embed=response)
