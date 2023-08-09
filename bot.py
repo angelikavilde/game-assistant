@@ -7,18 +7,27 @@ import requests
 import asyncio
 from dotenv import dotenv_values
 
-import responses
 from easter_egg import easter_egg_func
+from dnd_event import start_dnd_event
+from events_help import help_documentation
 
 codename_event, rock_paper_scissors_event, amongus_event = False, False, False
+dnd_event = False
 users_playing = []
 bot_message = None
 
+def handle_response(msg: str) -> str:
+    """Function that determines what to do with the responses from user"""
+
+    if msg == "help" or msg == "h":
+        return help_documentation("bot")
+    if msg[:7] == "repeat ":
+        return msg[7:]
 
 async def send_message(message, user_message: str) -> None:
     """Sends an appropriate response to a query sent with '!' """
     try:
-        response = responses.handle_response(user_message)
+        response = handle_response(user_message)
         await message.channel.send(response)
     except Exception as e:
         print(e)
@@ -41,7 +50,7 @@ def run_discord_bot():
     @client.event
     async def on_message(message):
         global codename_event, rock_paper_scissors_event, bot_message
-        global amongus_event
+        global amongus_event, dnd_event
         # No response if it was a message by our bot
         if message.author == client.user:
             bot_message = message # for killing last bots message
@@ -72,6 +81,9 @@ def run_discord_bot():
             elif amongus_event:
                 await message.delete()
                 await start_among_us(message, msg)
+            elif dnd_event:
+                response = start_dnd_event(msg, user)
+                await handle_event_responses(message, response)
             else:
                 await message.channel.send("""`Double slash commands only work for events.
 There is no event running! !h or !help for event list.`""")
@@ -131,13 +143,7 @@ def r_p_s(user_chose: str, user: str) -> str:
             return text + f"I chose {bot_chose}. You win!`"
     if user_chose == "//h":
         # returns help for the event
-        return """
-        Bot makes a choice before player. Run:
-        * //paper - to choose paper
-        * //rock - to choose rock
-        * //scissors - to choose scissors
-        * //q to finish the game
-        * Spaces do not count and it is _not_ case sensitive."""
+        return help_documentation("r-p-s")
     if user_chose == "//q":
         # finishes the game
         rock_paper_scissors_event = False
@@ -177,12 +183,7 @@ Team 2: {team2}; Captain: {random.choice(team2)}```"""
         return teams
     if user_chose == "//h":
         # return help about this event
-        return """__Run:__
-* //j - To join the event (will tell you if already joined)
-* //l - To leave the event (this and below will tell you if not joined)
-* //d x - To delete a player x from the game
-* //t - To make teams
-* //q - To finish the event"""
+        return help_documentation("codenames")
     if user_chose == "//q":
         # finishes the game
         codename_event = False
@@ -207,10 +208,7 @@ async def start_among_us(message, user_chose: str) -> None:
             await member_role_changed(message, member, False)
         await message.channel.send("`AmongUs event was restarted!`")
     if user_chose == "//h":
-        await message.channel.send("""AmongUs event commands:
-* //d - pronounce yourself dead
-* //n - resets the game
-* //q - finishes the game""")
+        await message.channel.send(help_documentation("amongus"))
     if user_chose == "//q":
         # finishes the game
         amongus_event = False
@@ -229,8 +227,8 @@ async def member_role_changed(message, user, add: bool) -> None:
 
 async def play_event_run(message, msg:str) -> None:
     """Handles the event start"""
-    global codename_event, rock_paper_scissors_event, amongus_event
-    if any([codename_event, rock_paper_scissors_event, amongus_event]):
+    global codename_event, rock_paper_scissors_event, amongus_event, dnd_event
+    if any([codename_event, rock_paper_scissors_event, amongus_event, dnd_event]):
         await message.channel.send("`There is already an event running. //h for event info or //q to finish!`")
         return
     match msg:
@@ -260,3 +258,9 @@ async def play_event_run(message, msg:str) -> None:
                 response = discord.Embed(title="Event was started:", description="* Among Us", color=discord.Colour(value=0x8f3ea3))
                 response.set_image(url="https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372")
                 await message.channel.send(embed=response)
+        case "dnd":
+            if amongus_event:
+                await message.channel.send("`Dungeons&Dragons event is already running!`")
+            else:
+                dnd_event = True
+                await message.channel.send("`Dungeons&Dragons event was started!`")
