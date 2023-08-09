@@ -6,22 +6,17 @@ from dotenv import dotenv_values
 import pandas as pd
 from pandas import DataFrame
 
+from events_help import help_documentation
+
+
 def start_dnd_event(msg: str, user: str) -> str:
     """Runs sql queries to get data from the database for dnd"""
     config = dotenv_values()
     conn = connect(config["DATABASE_IP"], cursor_factory=RealDictCursor)
     if msg == "//h":
-        return """__DnD event:__
-* //story x - Logs in a story (x) and saved for an event on today's date
-* //storyline - Shows all recorded history log
-* //storyline 05/06 - Shows all recorded log on 5th of June
-* //magic - Shows all **your** magic items recorded
-* //use magic x - Uses magic object by the **id**
-* //add magic x - Adds a magic item following this format:
-`x =  ` 
-* //q - Quits the event
-**DnD event is associated with database live on cloud so answer's wait-time might vary**
-    """
+        return help_documentation("dnd")
+    if msg == "//j":
+        return join_dnd(conn, user)
     if msg == "//storyline":
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM log_story")
@@ -39,7 +34,7 @@ def start_dnd_event(msg: str, user: str) -> str:
         except:
             return "```The date entered is in the wrong format or has no data. Try //storyline```"
     if msg[:8] == "//story ":
-        add_story(conn, msg)
+        return add_story(conn, msg)
     if msg[:7] == "//magic":
         with conn.cursor() as cur:
             cur.execute("""SELECT user_id FROM players WHERE username = %s""", user)
@@ -49,6 +44,21 @@ def start_dnd_event(msg: str, user: str) -> str:
             data = cur.fetchall()
         return f"`{user}: {data['item_name']},{data['race']},{data['class']},\
 coins: {data['coins']}, age: {data['age']}`"
+
+
+def join_dnd(conn, user: str) -> str:
+    """Verifies if a player is already in the game
+    and adds a player if not"""
+    with conn.cursor() as cur:
+        cur.execute("""SELECT username FROM players""")
+        users_playing = {i["username"] for i in cur.fetchall()}
+    if user in users_playing:
+        return f"`{user} is already in the game!`"
+    else:
+        with conn.cursor() as cur:
+            cur.execute("""INSERT INTO players(username) VALUES (%s)""", [user])
+            conn.commit()
+        return f"`{user} was successfully added into the game!`"
 
 
 def add_story(conn, msg: str):
