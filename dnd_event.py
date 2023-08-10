@@ -66,19 +66,15 @@ def add_story(conn, msg: str):
     story = msg[8:]
     split_story = story.split(" ")
     stories = []
-    add_story = True
-    while add_story is True:
-        story = ""
-        for i, part in enumerate(split_story):
-            if len(story + part) < 70:
-                story += part + " "
-            if split_story[i] is split_story[-1]:
-                stories.append(story)
-                add_story = False
-            if len(story + part) > 70:
-                split_story = split_story[i:]
-                stories.append(story)
-                break
+    story = ""
+    for piece in split_story:
+        if len(story + piece) <= 70:
+            story += " " + piece
+        else:
+            stories.append(story.strip())
+            story = piece
+        if piece is split_story[-1]:
+            stories.append(story.strip())
     for piece in stories:
             with conn.cursor() as cur:
                 cur.execute("""INSERT INTO log_story (story) VALUES (%s)""", [piece])
