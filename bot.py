@@ -1,4 +1,4 @@
-"""File that executes our bots functions"""
+"""File that executes the bots functions"""
 
 import random
 
@@ -11,10 +11,11 @@ from easter_egg import easter_egg_func
 from dnd_event import start_dnd_event
 from events_help import help_documentation
 
-codename_event, rock_paper_scissors_event, amongus_event = False, False, False
-dnd_event = False
-users_playing = []
+
+events = {"codename_event": False, "rock_paper_scissors_event": False,
+           "amongus_event": False, "dnd_event": False, "users_playing": []}
 bot_message = None
+
 
 def handle_response(msg: str) -> str:
     """Function that determines what to do with the responses from user"""
@@ -49,14 +50,13 @@ def run_discord_bot():
 
     @client.event
     async def on_message(message):
-        global codename_event, rock_paper_scissors_event, bot_message
-        global amongus_event, dnd_event
+        global events
+        if message.content == "":
+            # to kill errors with an empty message/image
+            return
         # No response if it was a message by our bot
         if message.author == client.user:
             bot_message = message # for killing last bots message
-            return
-        if message.content == "":
-            # to kill errors with an empty message/image
             return
         user = str(message.author)
         msg = str(message.content).lower()
@@ -67,21 +67,21 @@ def run_discord_bot():
         if msg[:6] == "!play ":
             await play_event_run(message, msg[6:])
         elif msg[0:2] == "//":
-            if codename_event:
+            if events["codename_event"]:
                 await message.delete()
                 response = start_codenames(msg, user)
                 await handle_event_responses(message, response)
-            elif rock_paper_scissors_event:
+            elif events["rock_paper_scissors_event"]:
                 response = r_p_s(msg, user)
                 await handle_event_responses(message, response)
                 if msg != "//q":
                     await asyncio.sleep(2)
                     response = r_p_s("play", user)
                     await handle_event_responses(message, response)
-            elif amongus_event:
+            elif events["amongus_event"]:
                 await message.delete()
                 await start_among_us(message, msg)
-            elif dnd_event:
+            elif events["dnd_event"]:
                 response = start_dnd_event(msg, user)
                 await handle_event_responses(message, response)
             else:
@@ -120,20 +120,20 @@ async def handle_event_responses(message, msg: str):
 
 def r_p_s(user_chose: str, user: str) -> str:
     """Bot plays rock-paper-scissors against a player"""
-    global rock_paper_scissors_event, users_playing
+    global events
     choices = ["rock","paper","scissors"]
     bot_chose = random.choice(choices)
     user_chose = user_chose.replace(" ", "")
     if user_chose == "play":
         # adds user to the game
-        users_playing = []
-        users_playing.append(user)
+        events["users_playing"] = []
+        events["users_playing"].append(user)
         return "`I have made my next choice!`"
     if user_chose[2:] in choices:
         # game play
         text = "`"
         user_chose = user_chose[2:]
-        if user not in users_playing:
+        if user not in events["users_playing"]:
             text += "Although you were not the user that has started the game, we can still play. "
         if bot_chose == user_chose:
             return text + f"I also chose {bot_chose}. We tie!`"
@@ -146,37 +146,37 @@ def r_p_s(user_chose: str, user: str) -> str:
         return help_documentation("r-p-s")
     if user_chose == "//q":
         # finishes the game
-        rock_paper_scissors_event = False
+        events["rock_paper_scissors_event"] = False
         return "`Rock-Paper-Scissors event was ended!`"
 
 
 def start_codenames(user_chose: str, user: str) -> str:
     """CodeNames event function"""
-    global codename_event, users_playing
+    global events
     if user_chose[:4] == "//d ":
         # allows to delete another user from the game
         user = user_chose[4:]
         user_chose = "//l"
     if user_chose == "//j":
         # adds the user to the game
-        if user in users_playing:
+        if user in events["users_playing"]:
             return f"`Cannot join! {user} has already joined the CodeNames event!`"
-        users_playing.append(user)
+        events["users_playing"].append(user)
         return f"`{user} was successfully added to the CodeNames event!`"
     if user_chose == "//l":
         # user leaves the game
-        if user in users_playing:
-            users_playing.remove(user)
+        if user in events["users_playing"]:
+            events["users_playing"].remove(user)
             return f"`{user} successfully left CodeNames event!`"
         else:
             return f"`Cannot leave! {user} did not enter the game. '//j' to join!`"
     if user_chose == "//t":
         # game is started
-        if len(users_playing) < 4:
+        if len(events["users_playing"]) < 4:
             return "`This game is designed for minimum of 4 people. Preferably 6 or more. Add more players!`"
-        team1 = users_playing.copy()
+        team1 = events["users_playing"].copy()
         team2 = []
-        for _ in range(int(len(users_playing)/2)):
+        for _ in range(int(len(events["users_playing"])/2)):
             team2.append(team1.pop(team1.index(random.choice(team1))))
         teams = f"""```Team 1: {team1}; Captain: {random.choice(team1)}
 Team 2: {team2}; Captain: {random.choice(team2)}```"""
@@ -186,18 +186,18 @@ Team 2: {team2}; Captain: {random.choice(team2)}```"""
         return help_documentation("codenames")
     if user_chose == "//q":
         # finishes the game
-        codename_event = False
-        users_playing = []
+        events["codename_event"] = False
+        events["users_playing"] = []
         return "`CodeNames event was ended!`"
 
 
 async def start_among_us(message, user_chose: str) -> None:
     """AmongUs event function"""
-    global users_playing, amongus_event
+    global events
     if user_chose == "//d":
         # player has died and was given a dead role
-        if not message.author in users_playing:
-            users_playing.append(message.author)
+        if not message.author in events["users_playing"]:
+            events["users_playing"].append(message.author)
             await member_role_changed(message, message.author, True)
             await message.channel.send(f"`{str(message.author)} has been announced dead!`")
         else:
@@ -211,8 +211,8 @@ async def start_among_us(message, user_chose: str) -> None:
         await message.channel.send(help_documentation("amongus"))
     if user_chose == "//q":
         # finishes the game
-        amongus_event = False
-        users_playing = []
+        events["amongus_event"] = False
+        events["users_playing"] = []
         await message.channel.send("`AmongUs event was ended!`")
 
 
@@ -227,40 +227,37 @@ async def member_role_changed(message, user, add: bool) -> None:
 
 async def play_event_run(message, msg:str) -> None:
     """Handles the event start"""
-    global codename_event, rock_paper_scissors_event, amongus_event, dnd_event
-    if any([codename_event, rock_paper_scissors_event, amongus_event, dnd_event]):
+    global events
+    if any(e for e in events.values()):
         await message.channel.send("`There is already an event running. //h for event info or //q to finish!`")
         return
     match msg:
         case "codenames":
-            if codename_event:
+            if events["codename_event"]:
                 await message.channel.send("`CodeNames event is already running!`")
             else:
-                codename_event = True
+                events["codename_event"] = True
                 await message.channel.send("`CodeNames event was started!`")
         case "rps":
-            if rock_paper_scissors_event:
+            if events["rock_paper_scissors_event"]:
                 await message.channel.send("`Rock-Paper-Scissors event is already running!`")
             else:
-                rock_paper_scissors_event = True
+                events["rock_paper_scissors_event"] = True
                 await message.channel.send("`Rock-Paper-Scissors event was started!`")
                 await asyncio.sleep(2)
                 response = r_p_s("play", str(message.author))
                 await handle_event_responses(message, response)
         case "amongus":
-            if amongus_event:
+            if events["amongus_event"]:
                 await message.channel.send("`AmongUs event is already running!`")
             else:
-                amongus_event = True
-                # voice_channel = discord.utils.get(message.guild.channels, name="Meeting Time")
-                # if voice_channel:
-                #     await message.guild.change_voice_state(channel=voice_channel, self_mute=True, self_deaf=False)
+                events["amongus_event"] = True
                 response = discord.Embed(title="Event was started:", description="* Among Us", color=discord.Colour(value=0x8f3ea3))
                 response.set_image(url="https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372")
                 await message.channel.send(embed=response)
         case "dnd":
-            if amongus_event:
+            if events["amongus_event"]:
                 await message.channel.send("`Dungeons&Dragons event is already running!`")
             else:
-                dnd_event = True
+                events["dnd_event"] = True
                 await message.channel.send("`Dungeons&Dragons event was started!`")
