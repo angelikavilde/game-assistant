@@ -6,6 +6,7 @@ import discord
 import requests
 import asyncio
 from dotenv import dotenv_values
+from discord.message import Message
 
 from easter_egg import easter_egg_func
 from dnd_event import start_dnd_event
@@ -17,17 +18,25 @@ events = {"codename_event": False, "rock_paper_scissors_event": False,
 bot_message = None
 
 
-def handle_response(msg: str) -> str:
+async def handle_response(message: Message, msg: str) -> None:
     """Function that determines what to do with the responses from
     user that starts with '!' """
-    if msg == "help" or msg == "h":
-        return help_documentation("bot")
-    if msg[:7] == "repeat ":
-        return msg[7:]
-    return "Sorry, I do not currently have a response for you."
+    if msg[:6] == "play ":
+        await play_event_run(message, msg[6:])
+    elif msg == "joke":
+        await send_joke(message)
+    elif msg == "kill":
+        await message.delete()
+        await bot_message.delete()
+    elif msg == "help" or msg == "h":
+        await message.channel.send(help_documentation("bot"))
+    elif msg[:7] == "repeat ":
+        await message.channel.send(msg[7:])
+    else:
+        await message.channel.send("Sorry, I do not currently have a response for you.")
 
 
-def run_discord_bot():
+def run_discord_bot() -> None:
     """Function that runs the bot with provided key,
     and listens to messages."""
     config = dotenv_values()
@@ -37,11 +46,11 @@ def run_discord_bot():
     client = discord.Client(intents=intents)
 
     @client.event
-    async def on_ready():
+    async def on_ready() -> None:
         print(f'{client.user} is now running!')
 
     @client.event
-    async def on_message(message):
+    async def on_message(message: Message) -> None:
         global events
         if message.content == "":
             # to kill errors with an empty message/image
@@ -56,24 +65,18 @@ def run_discord_bot():
 
         print(f"{user} said: '{msg}' ({chnl})")
 
-        if msg[:6] == "!play ":
-            await play_event_run(message, msg[6:])
-        elif msg[0:2] == "//":
+        if msg[0:2] == "//":
             await event(message, msg, user)
-        elif msg == "!joke":
-            await send_joke(message)
-        elif msg == "!kill":
-            await message.delete()
-            await bot_message.delete()
         elif msg[0] == "!":
             await message.delete()
-            # await send_message(message, msg[1:])
+            await handle_response(message, msg[1:])
         else:
             await easter_egg_func(message, msg)
+        
     client.run(TOKEN)
 
 
-async def send_joke(message) -> None:
+async def send_joke(message: Message) -> None:
     request = requests.get("https://official-joke-api.appspot.com/jokes/programming/random")
     joke = request.json()
     await message.channel.send(joke[0]["setup"])
@@ -81,7 +84,7 @@ async def send_joke(message) -> None:
     await message.channel.send(joke[0]["punchline"])
 
 
-async def handle_event_responses(message, msg: str):
+async def handle_event_responses(message: Message, msg: str):
     """Events when activated allow to run '/' commands.
     Some might however not exist."""
     try:
@@ -90,7 +93,7 @@ async def handle_event_responses(message, msg: str):
         await message.channel.send("This is not an allowed command for this event. Try '//h' for help!")
 
 
-async def event(message, msg: str, user: str) -> None:
+async def event(message: Message, msg: str, user: str) -> None:
     """Handles // commands"""
     if events["codename_event"]:
         await message.delete()
@@ -189,7 +192,7 @@ Team 2: {team2}; Captain: {random.choice(team2)}```"""
         return "`CodeNames event was ended!`"
 
 
-async def start_among_us(message, user_chose: str) -> None:
+async def start_among_us(message: Message, user_chose: str) -> None:
     """AmongUs event function"""
     global events
     if user_chose == "//d":
@@ -217,7 +220,7 @@ async def start_among_us(message, user_chose: str) -> None:
         await message.channel.send("`AmongUs event was ended!`")
 
 
-async def member_role_changed(message, user, add: bool) -> None:
+async def member_role_changed(message: Message, user, add: bool) -> None:
     """Gives a user a Dead Crewmate role or removes it"""
     role = discord.utils.get(message.guild.roles, name="Dead Crewmate")
     if add:
@@ -226,7 +229,7 @@ async def member_role_changed(message, user, add: bool) -> None:
         await user.remove_roles(role)
 
 
-async def play_event_run(message, msg:str) -> None:
+async def play_event_run(message: Message, msg:str) -> None:
     """Handles the event start"""
     global events
     if any(e for e in events.values()):
@@ -256,7 +259,7 @@ async def play_event_run(message, msg:str) -> None:
                 await embed_for_events(message, "Dungeons & Dragons", link)
 
 
-async def embed_for_events(message, event: str, image_url: str) -> None:
+async def embed_for_events(message: Message, event: str, image_url: str) -> None:
     """Sends an event started embed"""
     response = discord.Embed(title="Event was started:", description=f"* {event}", color=discord.Colour(value=0x8f3ea3))
     response.set_image(url=image_url)
