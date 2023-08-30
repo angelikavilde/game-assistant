@@ -1,28 +1,31 @@
+"""Codenames event bot functionalities"""
+
 import random
 
 from events_help import help_documentation
 
+
 def start_codenames(user_chose: str, user: str, events: dict) -> tuple[str,dict]:
     """CodeNames event function"""
+
     if user_chose[:4] == "//d ":
-        # allows to delete another user from the game
         user = user_chose[4:]
         user_chose = "//l"
+
     if user_chose == "//j":
-        # adds the user to the game
         if user in events["users_playing"]:
             return f"`Cannot join! {user} has already joined the CodeNames event!`", events
         events["users_playing"].append(user)
         return f"`{user} was successfully added to the CodeNames event!`", events
+
     if user_chose == "//l":
-        # user leaves the game
         if user in events["users_playing"]:
             events["users_playing"].remove(user)
             return f"`{user} successfully left CodeNames event!`", events
         else:
             return f"`Cannot leave! {user} did not enter the game. '//j' to join!`", events
+
     if user_chose == "//t":
-        # game is started
         if len(events["users_playing"]) < 4:
             return "`This game is designed for minimum of 4 people. Preferably 6 or more. Add more players!`", events
         team1 = events["users_playing"].copy()
@@ -32,11 +35,11 @@ def start_codenames(user_chose: str, user: str, events: dict) -> tuple[str,dict]
         teams = f"""```Team 1: {team1}; Captain: {random.choice(team1)}
 Team 2: {team2}; Captain: {random.choice(team2)}```"""
         return teams, events
+
     if user_chose == "//h":
-        # return help about this event
         return help_documentation("codenames"), events
+
     if user_chose == "//q":
-        # finishes the game
         events["codename_event"] = False
         events["users_playing"] = []
         return "`CodeNames event was ended!`", events
