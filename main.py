@@ -1,7 +1,7 @@
-"""File that runs the previous bot script and activates the bot"""
+"""File that runs bot script and activates the bot"""
 
-import bot
+from bot import run_discord_bot
 
 
 if __name__ == '__main__':
-    bot.run_discord_bot()
+    run_discord_bot()
