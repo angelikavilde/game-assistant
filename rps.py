@@ -4,14 +4,17 @@ from events_help import help_documentation
 
 def r_p_s(user_chose: str, user: str, events: dict) -> tuple[str,dict]:
     """Bot plays rock-paper-scissors against a player"""
+
     choices = ["rock","paper","scissors"]
     bot_chose = random.choice(choices)
     user_chose = user_chose.replace(" ", "")
+
     if user_chose == "play":
         # adds user to the game
         events["users_playing"] = []
         events["users_playing"].append(user)
         return "`I have made my next choice!`", events
+
     if user_chose[2:] in choices:
         # game play
         text = "`"
@@ -24,9 +27,11 @@ def r_p_s(user_chose: str, user: str, events: dict) -> tuple[str,dict]:
             return text + f"I chose {bot_chose}. You lose!`", events
         else:
             return text + f"I chose {bot_chose}. You win!`", events
+
     if user_chose == "//h":
         # returns help for the event
         return help_documentation("r-p-s"), events
+
     if user_chose == "//q":
         # finishes the game
         events["rock_paper_scissors_event"] = False
