@@ -22,15 +22,21 @@ bot_message = None
 async def handle_response(message: Message, msg: str) -> None:
     """Function that determines what to do with the responses from
     user that starts with '!' """
+
     if msg[:5] == "play ":
         await play_event_run(message, msg[5:])
+
     elif msg == "joke":
         await send_joke(message)
+
     elif msg == "kill":
-        await message.delete()
-        await bot_message.delete()
+        global bot_message
+        if bot_message is not None:
+            await bot_message.delete()
+
     elif msg == "help" or msg == "h":
         await message.channel.send(help_documentation("bot"))
+
     elif msg[:7] == "repeat ":
         await message.channel.send(msg[7:])
     else:
@@ -39,7 +45,8 @@ async def handle_response(message: Message, msg: str) -> None:
 
 def run_discord_bot() -> None:
     """Function that runs the bot with provided key,
-    and listens to messages."""
+    and listens to messages"""
+
     config = dotenv_values()
     TOKEN = config["TOKEN"]
     intents = discord.Intents.default()
@@ -52,7 +59,7 @@ def run_discord_bot() -> None:
 
     @client.event
     async def on_message(message: Message) -> None:
-        global events
+        global events, bot_message
         if message.content == "":
             # to kill errors with an empty message/image
             return
@@ -79,6 +86,7 @@ def run_discord_bot() -> None:
 
 async def send_joke(message: Message) -> None:
     """Returns programmer joke from an API"""
+
     request = requests.get("https://official-joke-api.appspot.com/jokes/programming/random")
     joke = request.json()
     await message.channel.send(joke[0]["setup"])
@@ -88,7 +96,8 @@ async def send_joke(message: Message) -> None:
 
 async def handle_event_responses(message: Message, msg: str):
     """Events when activated allow to run '/' commands.
-    Some might however not exist."""
+    Some might however not exist"""
+
     try:
         await message.channel.send(msg)
     except Exception as e:
@@ -99,10 +108,12 @@ async def handle_event_responses(message: Message, msg: str):
 async def event(message: Message, msg: str, user: str) -> None:
     global events
     """Handles // commands"""
+
     if events["codename_event"]:
         await message.delete()
         response, events = start_codenames(msg, user, events)
         await handle_event_responses(message, response)
+
     elif events["rock_paper_scissors_event"]:
         response, events = r_p_s(msg, user, events)
         await handle_event_responses(message, response)
@@ -110,14 +121,17 @@ async def event(message: Message, msg: str, user: str) -> None:
             await asyncio.sleep(2)
             response, events = r_p_s("play", user, events)
             await handle_event_responses(message, response)
+
     elif events["amongus_event"]:
         await message.delete()
         events = await start_among_us(message, msg, events)
         if msg not in ["//h", "//d", "//n", "//q"]:
             await handle_event_responses(message, "")
+
     elif events["dnd_event"]:
         response = start_dnd_event(msg, user)
         await handle_event_responses(message, response)
+
     else:
         await message.channel.send("""`Double slash commands only work during events.
 There is no event running! !h or !help for event list.`""")
@@ -125,10 +139,12 @@ There is no event running! !h or !help for event list.`""")
 
 async def play_event_run(message: Message, msg:str) -> None:
     """Handles the event start"""
+
     global events
     if any(e for e in events.values()):
         await message.channel.send("`There is already an event running. //h for event info or //q to finish!`")
         return
+
     match msg:
         case "codenames":
             if not events["codename_event"]:
@@ -156,6 +172,7 @@ async def play_event_run(message: Message, msg:str) -> None:
 
 async def embed_for_events(message: Message, event: str, image_url: str) -> None:
     """Sends an event started embed"""
+
     response = discord.Embed(title="Event was started:", description=f"* {event}", color=discord.Colour(value=0x8f3ea3))
     response.set_image(url=image_url)
     await message.channel.send(embed=response)
