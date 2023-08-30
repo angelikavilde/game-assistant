@@ -16,7 +16,7 @@ __DnD event:__
 ** Items with the same name must be recorded as <name> x2 or else will use both at once**
 * //add magic x - Adds a magic item following this format:
 ```
-x =  item_name, item_type, rarity, attunement_required, item_class, description
+x =  item name, item type, rarity, attunement required, item class, description
 
 attunement_required can only be yes/no, if yes - mention class (if no, put "-" for item class)
 
