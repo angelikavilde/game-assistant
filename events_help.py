@@ -18,10 +18,10 @@ __DnD event:__
 ```
 x =  item name, item type, rarity, attunement required, item class, description
 
-attunement_required can only be yes/no, if yes - mention class (if no, put "-" for item class)
+Attunement required can only be yes/no, if yes - mention class (if no, put "-" for item class)
 
 Item type must be a number! See below:
-1 - Armour, 2 -Potion, 3 - Ring, 4 - Rod, 5 - Scroll,
+1 - Armour, 2 - Potion, 3 - Ring, 4 - Rod, 5 - Scroll,
 6 - Staff, 7 - Wand, 8 - Weapon, 9 - Wondrous Item
 
 Rarity must be a number! See below:
