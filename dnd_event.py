@@ -1,9 +1,11 @@
 """Dnd Event functions"""
 
+from os import environ
+
 from psycopg2 import connect
 from psycopg2.extras import RealDictCursor
 from psycopg2.extensions import connection
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 from pandas import DataFrame
 
 from events_help import help_documentation
@@ -12,8 +14,8 @@ from events_help import help_documentation
 def start_dnd_event(msg: str, user: str, events: dict) -> str:
     """Runs sql queries to get data from the database for dnd"""
 
-    config = dotenv_values()
-    conn = connect(config["DATABASE_IP"], cursor_factory=RealDictCursor)
+    load_dotenv()
+    conn = connect(environ["DATABASE_IP"], cursor_factory=RealDictCursor)
 
     if msg == "//h":
         return help_documentation("dnd"), events
