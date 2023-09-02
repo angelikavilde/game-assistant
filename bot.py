@@ -129,7 +129,7 @@ async def event(message: Message, msg: str, user: str) -> None:
             await handle_event_responses(message, "")
 
     elif events["dnd_event"]:
-        response = start_dnd_event(msg, user)
+        response, events = start_dnd_event(msg, user, events)
         await handle_event_responses(message, response)
 
     else:
