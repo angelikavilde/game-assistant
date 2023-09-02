@@ -1,9 +1,11 @@
 """File that executes the bots functions"""
 
+from os import environ
+
 import discord
 import requests
 import asyncio
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 from discord.message import Message
 
 from easter_egg import easter_egg_func
@@ -47,8 +49,8 @@ def run_discord_bot() -> None:
     """Function that runs the bot with provided key,
     and listens to messages"""
 
-    config = dotenv_values()
-    TOKEN = config["TOKEN"]
+    load_dotenv()
+    TOKEN = environ["TOKEN"]
     intents = discord.Intents.default()
     intents.message_content = True
     client = discord.Client(intents=intents)
