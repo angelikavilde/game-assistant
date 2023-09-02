@@ -41,10 +41,8 @@ def start_dnd_event(msg: str, user: str, events: dict) -> str:
         if user_id is None:
             return "`User not found! Add yourself to the game -> //j`", events
 
-        with conn.cursor() as cur:
-            cur.execute("""SELECT * FROM magic_items WHERE user_id = %s""", [user_id])
-            data = cur.fetchall()
-        return format_magic_items_displayed(conn, data), events
+        magic_items_held = get_all_magic_items(conn, user_id)
+        return format_magic_items_displayed(conn, magic_items_held), events
 
     if msg[0:12] == "//add magic ":
         return add_magic_item(conn, user, msg), events
@@ -57,19 +55,33 @@ def start_dnd_event(msg: str, user: str, events: dict) -> str:
     return "", events
 
 
+def get_all_magic_items(conn: connection, user_id) -> dict:
+    """Returns all magic items user holds"""
+
+    with conn.cursor() as cur:
+        cur.execute("""SELECT * FROM magic_items WHERE user_id = %s""", [user_id])
+        return cur.fetchall()
+
+
 def use_magic_item(conn: connection, user: str, msg: str) -> str:
     """Deletes a magic item from user's magic items if exists"""
 
     user_id = find_user(conn, user)
     item_name = msg[12:].strip()
 
-    try:
-        with conn.cursor() as cur:
-            cur.execute("""DELETE FROM magic_items WHERE user_id = %s AND item_name = %s""", [user_id, item_name])
-            conn.commit()
-        return f"`{item_name} was successfully used by {user}`"
-    except:
+    all_users_magic_items = get_all_magic_items(conn, user_id)
+    all_users_magic_items = [item["item_name"] for item in all_users_magic_items]
+
+    if user_id is None:
+        return "`User not found! Add yourself to the game -> //j`"
+
+    if not item_name in all_users_magic_items:
         return f"`{user} does not currently hold {item_name}! Check //magic for your magical items!`"
+
+    with conn.cursor() as cur:
+        cur.execute("""DELETE FROM magic_items WHERE user_id = %s AND item_name = %s""", [user_id, item_name])
+        conn.commit()
+    return f"`{item_name} was successfully used by {user}`"
 
 
 def format_magic_items_displayed(conn: connection, magic_items_data: dict) -> str:
