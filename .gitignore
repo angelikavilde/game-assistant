@@ -4,3 +4,4 @@ commands_remember.txt
 easter_egg.py
 venv
 .DS_Store
+.dockerignore
