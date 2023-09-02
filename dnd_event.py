@@ -9,46 +9,50 @@ from pandas import DataFrame
 from events_help import help_documentation
 
 
-def start_dnd_event(msg: str, user: str) -> str:
+def start_dnd_event(msg: str, user: str, events: dict) -> str:
     """Runs sql queries to get data from the database for dnd"""
 
     config = dotenv_values()
     conn = connect(config["DATABASE_IP"], cursor_factory=RealDictCursor)
 
     if msg == "//h":
-        return help_documentation("dnd")
+        return help_documentation("dnd"), events
 
     if msg == "//j":
-        return join_dnd(conn, user)
+        return join_dnd(conn, user), events
 
     if msg == "//storyline":
-        return full_story(conn)
+        return full_story(conn), events
 
     if msg[0:12] == "//storyline ":
         date = msg[12:].strip()
         try:
-            return part_story(conn, date)
+            return part_story(conn, date), events
         except:
-            return "```The date entered is in the wrong format or has no data. Try //storyline```"
+            return "```The date entered is in the wrong format or has no data. Try //storyline```", events
 
     if msg[:8] == "//story ":
-        return log_story(conn, msg)
+        return log_story(conn, msg), events
 
     if msg[:7] == "//magic":
         user_id = find_user(conn, user)
         if user_id is None:
-            return "`User not found! Add yourself to the game -> //j`"
+            return "`User not found! Add yourself to the game -> //j`", events
 
         with conn.cursor() as cur:
             cur.execute("""SELECT * FROM magic_items WHERE user_id = %s""", [user_id])
             data = cur.fetchall()
-        return format_magic_items_displayed(conn, data)
+        return format_magic_items_displayed(conn, data), events
 
     if msg[0:12] == "//add magic ":
-        return add_magic_item(conn, user, msg)
+        return add_magic_item(conn, user, msg), events
 
     if msg[0:12] == "//use magic ":
-        return use_magic_item(conn, user, msg)
+        return use_magic_item(conn, user, msg), events
+    if msg == "//q":
+        events["dnd_event"] = False
+        return "`Dungeons & Dragons event was ended!`", events
+    return "", events
 
 
 def use_magic_item(conn: connection, user: str, msg: str) -> str:
