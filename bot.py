@@ -20,7 +20,7 @@ from rps import r_p_s
 class BotEvents():
     """Class for bot events"""
 
-    def __init__ (self, guild: any):
+    def __init__ (self):
         # check the type of a guild object
         """Starting with all events set to False
         and users playing to an empty list"""
@@ -29,25 +29,33 @@ class BotEvents():
         self.amongus_event = False
         self.dnd_event = False
         self.users_playing = []
-        self.all_event_statuses = [self.codenames_event,
-            self.rock_paper_scissors_event, self.amongus_event, self.dnd_event]
-        self.guild = guild
+        # self.guild = guild
         # add a check if correct guild
 
-events = BotEvents()
+    @classmethod
+    def create_instance(cls: type) -> 'BotEvents':
+        """Create a new instance of BotEvents with its own state."""
+        return cls()
+
+    def get_all_event_statuses(self) -> bool:
+        """Returns bool whether any events is running"""
+        return any((self.codenames_event,
+            self.rock_paper_scissors_event, self.amongus_event, self.dnd_event))
+
+
+events_obj = BotEvents.create_instance()
 bot_message = None
 
 
-async def check_events_status(interaction: discord.Interaction) -> bool:
+async def check_events_status(interaction: discord.Interaction, events: BotEvents) -> bool:
     """Verifies the events running statuses to make sure new event can be started"""
-    global events, bot_message
-    if any(e for e in events.all_event_statuses):
+    if events.get_all_event_statuses():
         await interaction.response.send_message("`There is already an event running. //h for event info or //q to finish!`")
         return True
     elif not bot_message or str(bot_message.content) != "Check game commands with //h":
         # If event was activated recently, the bot's last message would show it
         return False
-    return False
+    return True
 
 
 class StartEvent(discord.ui.View):
@@ -56,9 +64,8 @@ class StartEvent(discord.ui.View):
 
     @discord.ui.button(label="CodeNames", row=0, style=discord.ButtonStyle.gray)
     async def codenames(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
-        if not await check_events_status(interaction):
-            global events
-            events.codenames_event = True
+        if not await check_events_status(interaction, events_obj):
+            events_obj.codenames_event = True
             link = "https://cdn.discordapp.com/attachments/1130455303087984704/1144308331922600026/Screenshot_2023-08-24_at_17.32.32.png"
             await embed_for_events(interaction, "CodeNames", link)
 
@@ -71,17 +78,15 @@ class StartEvent(discord.ui.View):
 
     @discord.ui.button(label="AmongUs", row=0, style=discord.ButtonStyle.gray)
     async def among_us(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
-        if not await check_events_status(interaction):
-            global events
-            events.amongus_event = True
+        if not await check_events_status(interaction, events_obj):
+            events_obj.amongus_event = True
             link = "https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372"
             await embed_for_events(interaction, "Among Us", link)
 
     @discord.ui.button(label="DnD", row=0, style=discord.ButtonStyle.gray)
     async def dnd(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
-        if not await check_events_status(interaction):
-            global events
-            events.dnd_event = True
+        if not await check_events_status(interaction, events_obj):
+            events_obj.dnd_event = True
             link = "https://db4sgowjqfwig.cloudfront.net/campaigns/112103/assets/550235/Bugbear.png?1453822798"
             await embed_for_events(interaction, "Dungeons & Dragons", link)
 
@@ -94,6 +99,7 @@ def run_discord_bot() -> None:
     TOKEN = environ["TOKEN"]
     intents = discord.Intents.default()
     intents.message_content = True
+    intents.guilds = True
     client = commands.Bot(intents=intents, command_prefix="//")
 
     @client.tree.command(name="joke")
@@ -115,7 +121,6 @@ def run_discord_bot() -> None:
     @client.tree.command(name="kill")
     async def kill(self: discord.interactions.Interaction) -> None:
         """Kills last bot's message"""
-        global bot_message
         if bot_message is not None:
             await bot_message.delete()
     
@@ -124,6 +129,19 @@ def run_discord_bot() -> None:
         """Sends bot's help documentation"""
         await interaction.response.send_message(help_documentation("bot"))
 
+    # @client.group(name="groupname_test", invoke_without_command=True)
+    # async def groupname_test(ctx: commands.Context):
+    #     # This function will be called when the user runs just "//groupname"
+    #     await ctx.send("You need to specify a subcommand. Example: //groupname subcommand")
+
+    # @groupname_test.command(name="subcommand1")
+    # async def subcommand1(ctx: commands.Context):
+    #     await ctx.send("This is subcommand 1")
+
+    # @groupname_test.command(name="subcommand2")
+    # async def subcommand2(ctx: commands.Context):
+    #     await ctx.send("This is subcommand 2")
+
     @client.event
     async def on_ready() -> None:
         print(f'{client.user} is now running!')
@@ -131,6 +149,7 @@ def run_discord_bot() -> None:
 
     @client.event
     async def on_message(message: Message) -> None:
+        await client.process_commands(message)
         global bot_message
         if message.content == "":
             # to kill errors with an empty message/image
@@ -146,15 +165,15 @@ def run_discord_bot() -> None:
 
         print(f"{user} said: '{msg}' ({chnl})")
 
-        if msg[0:2] == "//":
-            await event(message, msg, user)
-        else:
-            await easter_egg_func(message, msg)
-        
+        # if msg[0:2] == "//":
+        #     await event_run(message, msg, user)
+        # else:
+        #     await easter_egg_func(message, msg)
+
     client.run(TOKEN)
 
 
-async def handle_event_responses(message: Message, msg: str):
+async def handle_event_responses(message: Message, msg: str) -> None:
     """Events when activated allow to run '/' commands.
     Some might however not exist"""
 
@@ -168,16 +187,15 @@ async def handle_event_responses(message: Message, msg: str):
         await message.channel.send("This is not an allowed command for this event. Try '//h' for help!")
 
 
-async def event(message: Message, msg: str, user: str) -> None:
+async def event_run(message: Message, msg: str, user: str) -> None:
     """Handles // commands"""
 
-    global events
-    if events.codenames_event:
+    if events_obj.codenames_event:
         await message.delete()
-        response = start_codenames(msg, user, events)
+        response = start_codenames(msg, user, events_obj)
         await handle_event_responses(message, response)
 
-    elif events.rock_paper_scissors_event:
+    elif events_obj.rock_paper_scissors_event:
         pass
         # response, events = r_p_s(msg, user, events)
         # await handle_event_responses(message, response)
@@ -186,12 +204,12 @@ async def event(message: Message, msg: str, user: str) -> None:
         #     response = r_p_s("play", user, events)
         #     await handle_event_responses(message, response)
 
-    elif events.amongus_event:
+    elif events_obj.amongus_event:
         await message.delete()
-        events = start_among_us(message, msg, events)
+        await start_among_us(message, msg, events_obj)
 
-    elif events.dnd_event:
-        response = start_dnd_event(msg, user, events)
+    elif events_obj.dnd_event:
+        response = start_dnd_event(msg, user, events_obj)
         await handle_event_responses(message, response)
 
     else:
