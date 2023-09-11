@@ -59,9 +59,9 @@ AmongUs event commands:
         case "bot":
             return """
 These are _some_ of the commands I respond to:
-* !repeat - repeats a message after you and deletes your sent message
-* !joke - sends programmer joke
-* !kill - deletes last bots message and the command will be deleted off the screen too (!kill)
-* !play x - runs an event x. List of available events: rps, codenames, amongus, dnd.
+* /repeat - repeats a message after you and deletes your sent message
+* /joke - sends programmer joke
+* /kill - deletes last bots message and the command will be deleted off the screen too (!kill)
+* /play - shows events that could be activated
 **each event when activated has its own commands //h for help about the event**
 """
