@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from pandas import DataFrame
 
 from events_help import help_documentation
-from bot import BotEvents
 
 
 class DNDAddMagic(discord.ui.View):
@@ -34,8 +33,8 @@ class DNDAddMagic(discord.ui.View):
         await interaction.response.send_message("I've been clicked")
 
 
-def start_dnd_event(msg: str, user: str, events: BotEvents) -> str:
-    """Runs sql queries to get data from the database for dnd"""
+def start_dnd_event(msg: str, user: str, events) -> str:
+    """Runs psql queries to get data from the database for dnd"""
 
     load_dotenv()
     conn = connect(environ["DATABASE_IP"], cursor_factory=RealDictCursor)
