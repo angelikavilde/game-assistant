@@ -4,9 +4,8 @@ import discord
 from discord.message import Message
 
 from events_help import help_documentation
-from bot import BotEvents
 
-async def start_among_us(message: Message, user_chose: str, events: BotEvents) -> None:
+async def start_among_us(message: Message, user_chose: str, events) -> None:
     """AmongUs event function"""
 
     if user_chose == "//d":
