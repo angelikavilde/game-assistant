@@ -17,54 +17,37 @@ from amongus import start_among_us
 from rps import r_p_s
 
 
-events = {"CodeNames": False, "rock_paper_scissors_event": False,
-           "amongus_event": False, "dnd_event": False, "users_playing": []}
-bot_message = None
-
-
 class BotEvents():
     """Class for bot events"""
 
-    def __init__ (self):
+    def __init__ (self, guild: any):
+        # check the type of a guild object
+        """Starting with all events set to False
+        and users playing to an empty list"""
         self.codenames_event = False
         self.rock_paper_scissors_event = False
         self.amongus_event = False
         self.dnd_event = False
         self.users_playing = []
+        self.all_event_statuses = [self.codenames_event,
+            self.rock_paper_scissors_event, self.amongus_event, self.dnd_event]
+        self.guild = guild
+        # add a check if correct guild
 
-
-async def handle_response(message: Message, msg: str) -> None:
-    """Function that determines what to do with the responses from
-    user that starts with '!' """
-
-    if msg[:5] == "play ":
-        await play_event_run(message, msg[5:])
-
-    # elif msg == "joke":
-        # await send_joke(message)
-
-    elif msg == "kill":
-        global bot_message
-        if bot_message is not None:
-            await bot_message.delete()
-
-    elif msg == "help" or msg == "h":
-        await message.channel.send(help_documentation("bot"))
-
-    elif msg[:7] == "repeat ":
-        await message.channel.send(msg[7:])
-    else:
-        await message.channel.send("Sorry, I do not currently have a response for you.")
+events = BotEvents()
+bot_message = None
 
 
 async def check_events_status(interaction: discord.Interaction) -> bool:
-    """"""
+    """Verifies the events running statuses to make sure new event can be started"""
     global events, bot_message
-    if any(e for e in events.values()):
+    if any(e for e in events.all_event_statuses):
         await interaction.response.send_message("`There is already an event running. //h for event info or //q to finish!`")
         return True
     elif not bot_message or str(bot_message.content) != "Check game commands with //h":
+        # If event was activated recently, the bot's last message would show it
         return False
+    return False
 
 
 class StartEvent(discord.ui.View):
@@ -72,27 +55,33 @@ class StartEvent(discord.ui.View):
         super().__init__(timeout=30)
 
     @discord.ui.button(label="CodeNames", row=0, style=discord.ButtonStyle.gray)
-    async def codenames(self, interaction: discord.Interaction, Button: discord.ui.Button):
+    async def codenames(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
         if not await check_events_status(interaction):
+            global events
+            events.codenames_event = True
             link = "https://cdn.discordapp.com/attachments/1130455303087984704/1144308331922600026/Screenshot_2023-08-24_at_17.32.32.png"
             await embed_for_events(interaction, "CodeNames", link)
 
     @discord.ui.button(label="RockPaperScissors", row=0, style=discord.ButtonStyle.gray)
-    async def rps(self, interaction: discord.Interaction, Button: discord.ui.Button):
+    async def rps(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
     #     events["amongus_event"] = True
     #     link = "https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372"
     #     await embed_for_events(interaction, "Among Us", link)
         pass
 
     @discord.ui.button(label="AmongUs", row=0, style=discord.ButtonStyle.gray)
-    async def among_us(self, interaction: discord.Interaction, Button: discord.ui.Button):
+    async def among_us(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
         if not await check_events_status(interaction):
+            global events
+            events.amongus_event = True
             link = "https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372"
             await embed_for_events(interaction, "Among Us", link)
 
     @discord.ui.button(label="DnD", row=0, style=discord.ButtonStyle.gray)
-    async def dnd(self, interaction: discord.Interaction, Button: discord.ui.Button):
+    async def dnd(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
         if not await check_events_status(interaction):
+            global events
+            events.dnd_event = True
             link = "https://db4sgowjqfwig.cloudfront.net/campaigns/112103/assets/550235/Bugbear.png?1453822798"
             await embed_for_events(interaction, "Dungeons & Dragons", link)
 
@@ -105,10 +94,10 @@ def run_discord_bot() -> None:
     TOKEN = environ["TOKEN"]
     intents = discord.Intents.default()
     intents.message_content = True
-    client = commands.Bot(intents=intents, command_prefix="!")
+    client = commands.Bot(intents=intents, command_prefix="//")
 
     @client.tree.command(name="joke")
-    async def joke(message: Message):
+    async def joke(message: Message) -> None:
         """Returns programmer joke from an API"""
 
         request = requests.get("https://official-joke-api.appspot.com/jokes/programming/random")
@@ -118,9 +107,22 @@ def run_discord_bot() -> None:
         await message.channel.send(joke[0]["punchline"])
 
     @client.tree.command(name="play")
-    async def play(interaction: discord.Interaction):
+    async def play(interaction: discord.Interaction) -> None:
+        """Gives options for games to activate"""
         await interaction.response.send_message(
-            content="Choose an event!", view=StartEvent())
+            content="Let's play a game!", view=StartEvent())
+    
+    @client.tree.command(name="kill")
+    async def kill(self: discord.interactions.Interaction) -> None:
+        """Kills last bot's message"""
+        global bot_message
+        if bot_message is not None:
+            await bot_message.delete()
+    
+    @client.tree.command(name="help")
+    async def help(interaction: discord.Interaction) -> None:
+        """Sends bot's help documentation"""
+        await interaction.response.send_message(help_documentation("bot"))
 
     @client.event
     async def on_ready() -> None:
@@ -129,15 +131,15 @@ def run_discord_bot() -> None:
 
     @client.event
     async def on_message(message: Message) -> None:
-        global events, bot_message
+        global bot_message
         if message.content == "":
             # to kill errors with an empty message/image
             return
         # No response if it was a message by our bot
         if message.author == client.user:
             bot_message = message # for killing last bots message
-            print(str(bot_message.content))
             return
+
         user = str(message.author)
         msg = str(message.content).lower()
         chnl = str(message.channel)
@@ -146,9 +148,6 @@ def run_discord_bot() -> None:
 
         if msg[0:2] == "//":
             await event(message, msg, user)
-        elif msg[0] == "!":
-            await handle_response(message, msg[1:])
-            await message.delete()
         else:
             await easter_egg_func(message, msg)
         
@@ -173,27 +172,26 @@ async def event(message: Message, msg: str, user: str) -> None:
     """Handles // commands"""
 
     global events
-    if events["CodeNames"]:
+    if events.codenames_event:
         await message.delete()
-        response, events = start_codenames(msg, user, events)
+        response = start_codenames(msg, user, events)
         await handle_event_responses(message, response)
 
-    elif events["rock_paper_scissors_event"]:
-        response, events = r_p_s(msg, user, events)
-        await handle_event_responses(message, response)
-        if msg != "//q":
-            await asyncio.sleep(2)
-            response, events = r_p_s("play", user, events)
-            await handle_event_responses(message, response)
+    elif events.rock_paper_scissors_event:
+        pass
+        # response, events = r_p_s(msg, user, events)
+        # await handle_event_responses(message, response)
+        # if msg != "//q":
+        #     await asyncio.sleep(2)
+        #     response = r_p_s("play", user, events)
+        #     await handle_event_responses(message, response)
 
-    elif events["amongus_event"]:
+    elif events.amongus_event:
         await message.delete()
-        events = await start_among_us(message, msg, events)
-        if msg not in ["//h", "//d", "//n", "//q"]:
-            await handle_event_responses(message, "")
+        events = start_among_us(message, msg, events)
 
-    elif events["dnd_event"]:
-        response, events = start_dnd_event(msg, user, events)
+    elif events.dnd_event:
+        response = start_dnd_event(msg, user, events)
         await handle_event_responses(message, response)
 
     else:
@@ -201,10 +199,10 @@ async def event(message: Message, msg: str, user: str) -> None:
 There is no event running! !h or !help for event list.`""")
 
 
-async def play_event_run(message: Message, msg:str) -> None:
-    """Handles the event start"""
+# async def play_event_run(message: Message, msg:str) -> None:
+#     """Handles the event start"""
 
-    # global events
+#     global events
     # if any(e for e in events.values()):
     #     await message.channel.send("`There is already an event running. //h for event info or //q to finish!`")
     #     return
@@ -216,12 +214,12 @@ async def play_event_run(message: Message, msg:str) -> None:
     #             link = "https://cdn.discordapp.com/attachments/1130455303087984704/1144308331922600026/Screenshot_2023-08-24_at_17.32.32.png"
     #             await embed_for_events(message, "CodeNames", link)
         # case "rps":
-    if not events["rock_paper_scissors_event"]:
-        events["rock_paper_scissors_event"] = True
-        await message.channel.send("`Rock-Paper-Scissors event was started!`")
-        await asyncio.sleep(2)
-        response, events = r_p_s("play", str(message.author), events)
-        await handle_event_responses(message, response)
+    # if not events.rock_paper_scissors_event:
+        # events.rock_paper_scissors_event = True
+        # await message.channel.send("`Rock-Paper-Scissors event was started!`")
+        # await asyncio.sleep(2)
+        # response = r_p_s("play", str(message.author), events)
+        # await handle_event_responses(message, response)
         # case "amongus":
         #     if not events["amongus_event"]:
         #         events["amongus_event"] = True
@@ -237,8 +235,6 @@ async def play_event_run(message: Message, msg:str) -> None:
 async def embed_for_events(interaction: discord.Interaction, event: str, image_url: str) -> None:
     """Sends an event started embed"""
 
-    global events
-    events[event] = True
     response = discord.Embed(title="Event was started:", description=f"* {event}", color=discord.Colour(value=0x8f3ea3))
     response.set_image(url=image_url)
     await interaction.response.send_message(content="Check game commands with //h", embed=response)
