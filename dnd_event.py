@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from pandas import DataFrame
 
 from events_help import help_documentation
+from bot import BotEvents
 
 
 class DNDAddMagic(discord.ui.View):
@@ -33,49 +34,49 @@ class DNDAddMagic(discord.ui.View):
         await interaction.response.send_message("I've been clicked")
 
 
-def start_dnd_event(msg: str, user: str, events: dict) -> str:
+def start_dnd_event(msg: str, user: str, events: BotEvents) -> str:
     """Runs sql queries to get data from the database for dnd"""
 
     load_dotenv()
     conn = connect(environ["DATABASE_IP"], cursor_factory=RealDictCursor)
 
     if msg == "//h":
-        return help_documentation("dnd"), events
+        return help_documentation("dnd")
 
     if msg == "//j":
-        return join_dnd(conn, user), events
+        return join_dnd(conn, user)
 
     if msg == "//storyline":
-        return full_story(conn), events
+        return full_story(conn)
 
     if msg[0:12] == "//storyline ":
         date = msg[12:].strip()
         try:
-            return part_story(conn, date), events
+            return part_story(conn, date)
         except:
-            return "```The date entered is in the wrong format or has no data. Try //storyline```", events
+            return "```The date entered is in the wrong format or has no data. Try //storyline```"
 
     if msg[:8] == "//story ":
-        return log_story(conn, msg), events
+        return log_story(conn, msg)
 
     if msg[:7] == "//magic":
         user_id = find_user(conn, user)
         if user_id is None:
-            return "`User not found! Add yourself to the game -> //j`", events
+            return "`User not found! Add yourself to the game -> //j`"
 
         magic_items_held = get_all_magic_items(conn, user_id)
-        return format_magic_items_displayed(conn, magic_items_held), events
+        return format_magic_items_displayed(conn, magic_items_held)
 
     if msg[0:12] == "//add magic ":
-        return "add magic item", events
-        # return add_magic_item(conn, user, msg), events
+        return "add magic item"
+        # return add_magic_item(conn, user, msg)
 
     if msg[0:12] == "//use magic ":
-        return use_magic_item(conn, user, msg), events
+        return use_magic_item(conn, user, msg)
     if msg == "//q":
-        events["dnd_event"] = False
-        return "`Dungeons & Dragons event was ended!`", events
-    return "", events
+        events.dnd_event = False
+        return "`Dungeons & Dragons event was ended!`"
+    return ""
 
 
 def get_all_magic_items(conn: connection, user_id) -> dict:
