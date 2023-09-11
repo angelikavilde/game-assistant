@@ -2,6 +2,7 @@
 
 from os import environ
 
+import discord
 from psycopg2 import connect
 from psycopg2.extras import RealDictCursor
 from psycopg2.extensions import connection
@@ -9,6 +10,27 @@ from dotenv import load_dotenv
 from pandas import DataFrame
 
 from events_help import help_documentation
+
+
+class DNDAddMagic(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=30)
+
+    @discord.ui.button(label="test", row=0, style=discord.ButtonStyle.red)
+    async def test1(self, interaction: discord.Interaction, Button: discord.ui.Button):
+        await interaction.response.send_message("I've been clicked")
+    @discord.ui.button(label="test2", row=0, style=discord.ButtonStyle.blurple)
+    async def test2(self, interaction: discord.Interaction, Button: discord.ui.Button):
+        await interaction.response.send_message("I've been clicked")
+    @discord.ui.button(label="test3", row=0, style=discord.ButtonStyle.danger)
+    async def test3(self, interaction: discord.Interaction, Button: discord.ui.Button):
+        await interaction.response.send_message("I've been clicked")
+    @discord.ui.button(label="test4", row=1, style=discord.ButtonStyle.secondary)
+    async def test4(self, interaction: discord.Interaction, Button: discord.ui.Button):
+        await interaction.response.send_message("I've been clicked")
+    @discord.ui.button(label="test5", row=1, style=discord.ButtonStyle.primary)
+    async def test5(self, interaction: discord.Interaction, Button: discord.ui.Button, ):
+        await interaction.response.send_message("I've been clicked")
 
 
 def start_dnd_event(msg: str, user: str, events: dict) -> str:
@@ -45,7 +67,8 @@ def start_dnd_event(msg: str, user: str, events: dict) -> str:
         return format_magic_items_displayed(conn, magic_items_held), events
 
     if msg[0:12] == "//add magic ":
-        return add_magic_item(conn, user, msg), events
+        return "add magic item", events
+        # return add_magic_item(conn, user, msg), events
 
     if msg[0:12] == "//use magic ":
         return use_magic_item(conn, user, msg), events
