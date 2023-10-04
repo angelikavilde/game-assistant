@@ -1,6 +1,7 @@
 """File that executes the bots functions"""
 
 from os import environ
+from random import choice
 
 import discord
 from discord.ext import commands
@@ -13,7 +14,7 @@ from dnd_event import start_dnd_event, DNDAddMagic
 from events_help import help_documentation
 from codenames import start_codenames
 from amongus import start_among_us
-from rps import r_p_s
+from rps import RockPaperScissors
 
 
 class Servers():
@@ -60,12 +61,12 @@ class BotEvents():
         return any((self.codenames_event, self.amongus_event, self.dnd_event))
 
 
-bot_message = None
-guild_id = 404
-servers_obj = Servers.create_instance()
+bot_message: discord.message.Message = None
+guild_id: int = 404
+servers_obj: 'Servers' = Servers.create_instance()
 
 
-async def check_events_status(interaction: discord.Interaction, servers) -> bool:
+async def check_events_status(interaction: discord.Interaction, servers: 'Servers') -> bool:
     """Verifies the events' running statuses to make sure new event can be started"""
     if servers.get_server().get_all_event_statuses():
         await interaction.response.send_message("`There is already an event running. //h for event info or //q to finish!`")
@@ -89,8 +90,10 @@ class StartEvent(discord.ui.View):
 
     @discord.ui.button(label="RockPaperScissors", row=0, style=discord.ButtonStyle.gray)
     async def rps(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
-        # await interaction.response.send_message(content="I've made my choice. Choose yours!", view=RockPaperScissors())
-        pass
+        choices = ["scissors", "rock", "paper"]
+        bot_chose = choice(choices)
+        await interaction.response.send_message(content="I've made my choice. Choose yours!",
+                                        view=RockPaperScissors(bot_chose, bot_message))
 
     @discord.ui.button(label="AmongUs", row=0, style=discord.ButtonStyle.gray)
     async def among_us(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
@@ -132,6 +135,15 @@ def run_discord_bot() -> None:
         await interaction.response.send_message(
             content="Let's play a game!", view=StartEvent())
     
+    @client.tree.command(name="r_p_s")
+    async def r_p_s(interaction: discord.Interaction) -> None:
+        """Play rock-paper-scissors with the bot"""
+        choices = ["scissors", "rock", "paper"]
+        bot_chose = choice(choices)
+        print(5)
+        await interaction.response.send_message(content="I've made my choice. Choose yours!",
+                                        view=RockPaperScissors(bot_chose, bot_message))
+
     @client.tree.command(name="kill")
     async def kill(self: discord.interactions.Interaction) -> None:
         """Kills last bot's message"""
