@@ -1,39 +1,44 @@
 """Rock-Paper-Scissors event functions"""
 
-import random
+from discord import Interaction, ButtonStyle
+from discord.message import Message
+from discord.ui import button, Button, View
 
-from events_help import help_documentation
+
+async def check_rps_played(interaction: Interaction, bot_message: Message) -> bool:
+    """Verifies the event's activation status to make sure event can be played"""
+    if not bot_message or "I've made my choice." not in str(bot_message.content):
+        return False
+    await interaction.response.send_message("Re-start the game!")
+    return True
 
 
-def r_p_s(user_chose: str, user: str, events: dict) -> tuple[str,dict]:
-    """Bot plays rock-paper-scissors against a player"""
+def who_won_rps(bot_chose: str, user_chose: str) -> str:
+    """Returns text on who chose what and who won/lost"""
+    if bot_chose == user_chose:
+        return f"`I also chose {bot_chose}. We tie!`"
+    if (user_chose,bot_chose) in [("scissors","rock"),("rock","paper"),("paper","scissors")]:
+        return f"`I chose {bot_chose}. You lose!`"
+    return f"`I chose {bot_chose}. You win!`"
 
-    choices = ["rock","paper","scissors"]
-    bot_chose = random.choice(choices)
-    user_chose = user_chose.replace(" ", "")
 
-    if user_chose == "play":
-        events["users_playing"] = []
-        events["users_playing"].append(user)
-        return "`I have made my next choice!`", events
+class RockPaperScissors(View):
+    def __init__(self, bot_choice: str, bot_msg: Message):
+        super().__init__(timeout=10)
+        self.bot_choice = bot_choice
+        self.bot_msg = bot_msg #TODO currently has similar to old issue where it isn't the new one that is ran
 
-    if user_chose[2:] in choices:
-        text = "`"
-        user_chose = user_chose[2:]
-        if user not in events["users_playing"]:
-            text += "Although you were not the user that has started the game, we can still play. "
-        if bot_chose == user_chose:
-            return text + f"I also chose {bot_chose}. We tie!`", events
-        elif (user_chose,bot_chose) in [("scissors","rock"),("rock","paper"),("paper","scissors")]:
-            return text + f"I chose {bot_chose}. You lose!`", events
-        else:
-            return text + f"I chose {bot_chose}. You win!`", events
+    @button(label="Rock", row=0, style=ButtonStyle.red)
+    async def rock(self, interaction: Interaction, Button: Button) -> None:
+        if not await check_rps_played(interaction, self.bot_msg):
+            await interaction.response.send_message(who_won_rps(self.bot_choice, "rock"))
 
-    if user_chose == "//h":
-        return help_documentation("r-p-s"), events
+    @button(label="Paper", row=0, style=ButtonStyle.red)
+    async def paper(self, interaction: Interaction, Button: Button) -> None:
+        if not await check_rps_played(interaction, self.bot_msg):
+            await interaction.response.send_message(who_won_rps(self.bot_choice, "paper"))
 
-    if user_chose == "//q":
-        events["rock_paper_scissors_event"] = False
-        events["users_playing"] = []
-        return "`Rock-Paper-Scissors event was ended!`", events
-    return "", events
+    @button(label="Scissors", row=0, style=ButtonStyle.red)
+    async def scissors(self, interaction: Interaction, Button: Button) -> None:
+        if not await check_rps_played(interaction, self.bot_msg):
+            await interaction.response.send_message(who_won_rps(self.bot_choice, "scissors"))
