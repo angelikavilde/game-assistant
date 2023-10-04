@@ -28,13 +28,13 @@ class Servers():
         return cls()
 
     def get_server(self) -> 'BotEvents':
-        """"""
+        """Returns events object relevant to current guild"""
         if guild_id not in self.server_events:
             self.add_server()
         return self.server_events[guild_id]
 
     def add_server(self) -> None:
-        """"""
+        """Adds an events object to the servers object"""
         self.server_events[guild_id] = BotEvents.create_instance(guild_id)
 
 
@@ -45,7 +45,6 @@ class BotEvents():
         """Starting with all events set to False
         and users playing to an empty list"""
         self.codenames_event = False
-        self.rock_paper_scissors_event = False
         self.amongus_event = False
         self.dnd_event = False
         self.users_playing = []
@@ -57,19 +56,17 @@ class BotEvents():
         return cls(guild_id)
 
     def get_all_event_statuses(self) -> bool:
-        """Returns bool whether any servers.get_server() is running"""
-        return any((self.codenames_event,
-            self.rock_paper_scissors_event, self.amongus_event, self.dnd_event))
+        """Returns bool whether any event is running"""
+        return any((self.codenames_event, self.amongus_event, self.dnd_event))
 
 
 bot_message = None
 guild_id = 404
 servers_obj = Servers.create_instance()
-# events_obj = BotEvents.get_instance(guild_id)
 
 
 async def check_events_status(interaction: discord.Interaction, servers) -> bool:
-    """Verifies the servers.get_server() running statuses to make sure new event can be started"""
+    """Verifies the events' running statuses to make sure new event can be started"""
     if servers.get_server().get_all_event_statuses():
         await interaction.response.send_message("`There is already an event running. //h for event info or //q to finish!`")
         return True
@@ -92,9 +89,7 @@ class StartEvent(discord.ui.View):
 
     @discord.ui.button(label="RockPaperScissors", row=0, style=discord.ButtonStyle.gray)
     async def rps(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
-    #     servers.get_server()["amongus_event"] = True
-    #     link = "https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372"
-    #     await embed_for_events(interaction, "Among Us", link)
+        # await interaction.response.send_message(content="I've made my choice. Choose yours!", view=RockPaperScissors())
         pass
 
     @discord.ui.button(label="AmongUs", row=0, style=discord.ButtonStyle.gray)
@@ -213,15 +208,6 @@ async def event_run(message: Message, msg: str, user: str) -> None:
         response = start_codenames(msg, user, servers_obj)
         await handle_event_responses(message, response)
 
-    elif servers_obj.get_server().rock_paper_scissors_event:
-        pass
-        # response, servers.get_server() = r_p_s(msg, user, servers.get_server())
-        # await handle_event_responses(message, response)
-        # if msg != "//q":
-        #     await asyncio.sleep(2)
-        #     response = r_p_s("play", user, servers.get_server())
-        #     await handle_event_responses(message, response)
-
     elif servers_obj.get_server().amongus_event:
         await message.delete()
         await start_among_us(message, msg, servers_obj)
@@ -231,41 +217,8 @@ async def event_run(message: Message, msg: str, user: str) -> None:
         await handle_event_responses(message, response)
 
     else:
-        await message.channel.send("""`Double slash commands only work during servers.get_server().
+        await message.channel.send("""`Double slash commands only work during server events.
 There is no event running! !h or !help for event list.`""")
-
-
-# async def play_event_run(message: Message, msg:str) -> None:
-#     """Handles the event start"""
-
-#     global servers.get_server()
-    # if any(e for e in servers.get_server().values()):
-    #     await message.channel.send("`There is already an event running. //h for event info or //q to finish!`")
-    #     return
-
-    # match msg:
-    #     case "codenames":
-    #         if not servers.get_server()["codename_event"]:
-    #             servers.get_server()["codename_event"] = True
-    #             link = "https://cdn.discordapp.com/attachments/1130455303087984704/1144308331922600026/Screenshot_2023-08-24_at_17.32.32.png"
-    #             await embed_for_events(message, "CodeNames", link)
-        # case "rps":
-    # if not servers.get_server().rock_paper_scissors_event:
-        # servers.get_server().rock_paper_scissors_event = True
-        # await message.channel.send("`Rock-Paper-Scissors event was started!`")
-        # await asyncio.sleep(2)
-        # response = r_p_s("play", str(message.author), servers.get_server())
-        # await handle_event_responses(message, response)
-        # case "amongus":
-        #     if not servers.get_server()["amongus_event"]:
-        #         servers.get_server()["amongus_event"] = True
-        #         link = "https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372"
-        #         await embed_for_events(message, "Among Us", link)
-        # case "dnd":
-        #     if not servers.get_server()["dnd_event"]:
-        #         servers.get_server()["dnd_event"] = True
-        #         link = "https://db4sgowjqfwig.cloudfront.net/campaigns/112103/assets/550235/Bugbear.png?1453822798"
-        #         await embed_for_events(message, "Dungeons & Dragons", link)
 
 
 async def embed_for_events(interaction: discord.Interaction, event: str, image_url: str) -> None:
