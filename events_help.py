@@ -31,15 +31,6 @@ Rarity must be a number! See below:
 * //q - Quits the event
 **DnD event is associated with database live on cloud so answer's wait-time might vary**
 """
-        case "r-p-s":
-            return """
-Bot makes a choice before player. Run:
-* //paper - to choose paper
-* //rock - to choose rock
-* //scissors - to choose scissors
-* //q to finish the game
-**Spaces do not count and it is _not_ case sensitive**
-"""
         case "codenames":
             return """
 __Run:__
