@@ -135,12 +135,11 @@ def run_discord_bot() -> None:
         await interaction.response.send_message(
             content="Let's play a game!", view=StartEvent())
     
-    @client.tree.command(name="r_p_s")
+    @client.tree.command(name="rps")
     async def r_p_s(interaction: discord.Interaction) -> None:
         """Play rock-paper-scissors with the bot"""
         choices = ["scissors", "rock", "paper"]
         bot_chose = choice(choices)
-        print(5)
         await interaction.response.send_message(content="I've made my choice. Choose yours!",
                                         view=RockPaperScissors(bot_chose, bot_message))
 
