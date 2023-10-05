@@ -33,6 +33,19 @@ class DNDAddMagic(discord.ui.View):
         await interaction.response.send_message("I've been clicked")
 
 
+class MagicItemRarity(discord.ui.View):
+
+    @discord.ui.select(placeholder = "Choose an item rarity", min_values=1, max_values=1,
+        options = [discord.SelectOption(label="Common"), discord.SelectOption(label="Uncommon"),
+            discord.SelectOption(label="Rare"), discord.SelectOption(label="Very Rare"),
+            discord.SelectOption(label="Legendary"), discord.SelectOption(label="Artifact"),
+            discord.SelectOption(label="Varies"), discord.SelectOption(label="Unknown Rarity")])
+
+    async def select_callback(self, select, interaction): # the function called when the user is done selecting options
+        await interaction.response.send_message(f"Awesome! I like {select.values[0]} too!")
+
+
+
 def start_dnd_event(msg: str, user: str, events) -> str:
     """Runs psql queries to get data from the database for dnd"""
 
