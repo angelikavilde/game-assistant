@@ -1,7 +1,6 @@
 """Rock-Paper-Scissors event functions"""
 
 from discord import Interaction, ButtonStyle
-from discord.message import Message
 from discord.ui import button, Button, View
 
 
