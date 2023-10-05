@@ -121,6 +121,14 @@ def run_discord_bot() -> None:
     intents.guilds = True
     client = commands.Bot(intents=intents, command_prefix="//")
 
+    @client.tree.command(name="aff")
+    async def affirm(interaction: discord.Interaction) -> None:
+        """Returns an affirmation text from an API"""
+
+        request = requests.get("https://www.affirmations.dev/")
+        affirmation = request.json()
+        await interaction.response.send_message(affirmation["affirmation"])
+
     @client.tree.command(name="joke")
     async def joke(interaction: discord.Interaction) -> None:
         """Returns programmer joke from an API"""
@@ -184,13 +192,14 @@ def run_discord_bot() -> None:
             return
 
         user = str(message.author.global_name) #TODO fix the name (only nickname vers used in text else dis name)
+        username = str(message.author)
         msg = str(message.content).lower()
         chnl = str(message.channel)
 
         print(f"{user} said: '{msg}' ({chnl}), guild: {guild_id}")
 
         if msg[0:2] == "//":
-            await event_run(message, msg, user)
+            await event_run(message, msg, username)
         else:
             await easter_egg_func(message, msg)
 
