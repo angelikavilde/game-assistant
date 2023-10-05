@@ -24,7 +24,7 @@ def who_won_rps(bot_chose: str, user_chose: str) -> str:
 
 
 class RockPaperScissors(View):
-    def __init__(self, bot_choice: str, bot_msg: Message):
+    def __init__(self, bot_choice: str):
         super().__init__(timeout=10)
         self.bot_choice = bot_choice
 
