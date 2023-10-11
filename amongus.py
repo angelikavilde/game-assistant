@@ -40,7 +40,10 @@ async def member_role_changed(message: Message, user, add: bool) -> None:
     """Gives a user a Dead Crewmate role or removes it"""
 
     role = discord.utils.get(message.guild.roles, name="Dead Crewmate")
-    if add:
-        await user.add_roles(role)
+    if not role:
+        await message.channel.send("```Dead Crewmate role does not exist on this channel!```")
     else:
-        await user.remove_roles(role)
+        if add:
+            await user.add_roles(role)
+        else:
+            await user.remove_roles(role)
