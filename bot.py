@@ -2,6 +2,7 @@
 
 from os import environ
 from random import choice
+import asyncio
 
 import discord
 from discord.ext import commands
@@ -10,7 +11,7 @@ from dotenv import load_dotenv
 from discord.message import Message
 
 from easter_egg import easter_egg_func
-from dnd_event import start_dnd_event, DNDAddMagic
+from dnd_event import start_dnd_event, MagicItemRarity, MagicItemType, MagicItemAttReq, DNDCog
 from events_help import help_documentation
 from codenames import start_codenames
 from amongus import start_among_us
@@ -121,6 +122,7 @@ def run_discord_bot() -> None:
     intents.guilds = True
     client = commands.Bot(intents=intents, command_prefix="//")
 
+
     @client.tree.command(name="aff")
     async def affirm(interaction: discord.Interaction) -> None:
         """Returns an affirmation text from an API"""
@@ -142,7 +144,7 @@ def run_discord_bot() -> None:
         """Gives options for games to activate"""
         await interaction.response.send_message(
             content="Let's play a game!", view=StartEvent())
-    
+
     @client.tree.command(name="rps")
     async def r_p_s(interaction: discord.Interaction) -> None:
         """Play rock-paper-scissors with the bot"""
@@ -162,31 +164,24 @@ def run_discord_bot() -> None:
         """Sends bot's help documentation"""
         await interaction.response.send_message(help_documentation("bot"))
 
-    # @client.group(name="groupname_test", invoke_without_command=True)
-    # async def groupname_test(ctx: commands.Context):
-    #     # This function will be called when the user runs just "//groupname"
-    #     await ctx.send("You need to specify a subcommand. Example: //groupname subcommand")
-
-    # @groupname_test.command(name="subcommand1")
-    # async def subcommand1(ctx: commands.Context):
-    #     await ctx.send("This is subcommand 1")
-
-    # @groupname_test.command(name="subcommand2")
-    # async def subcommand2(ctx: commands.Context):
-    #     await ctx.send("This is subcommand 2")
 
     @client.event
     async def on_ready() -> None:
-        print(f'{client.user} is now running!')
+        print(f"{client.user} is now running!")
         await client.tree.sync()
+        dnd_cog = DNDCog(client)
+        await client.add_cog(dnd_cog)
+        print("Added event commands!")
+
 
     @client.event
     async def on_message(message: Message) -> None:
         await client.process_commands(message)
         global bot_message, guild_id
-        guild_id = message.guild.id
         if not message.content:
             return
+        guild_id = message.guild.id
+
         if message.author == client.user:
             bot_message = message
             return
@@ -198,10 +193,10 @@ def run_discord_bot() -> None:
 
         print(f"{user} said: '{msg}' ({chnl}), guild: {guild_id}")
 
-        if msg[0:2] == "//":
-            await event_run(message, msg, username)
-        else:
-            await easter_egg_func(message, msg)
+        # if msg[0:2] == "//":
+        #     await event_run(message, msg, username)
+        # else:
+        #     await easter_egg_func(message, msg)
 
     client.run(TOKEN)
 
@@ -212,7 +207,15 @@ async def handle_event_responses(message: Message, msg: str) -> None:
 
     try:
         if msg == "add magic item":
-            await message.channel.send(content="test-2", view=DNDAddMagic())
+            await message.channel.send(content="test-2", view=MagicItemRarity())
+            await message.channel.send(content="t", view=MagicItemType())
+            await message.channel.send(content="t", view=MagicItemAttReq())
+            from dnd_event import magic_item
+            if magic_item.get("att_req", None) == "yes":
+                await message.channel.send(content="""This item requires a specific class
+                        to use it. Please share - which""", view=MagicItemAttReq())
+            # await message.channel.send("Please enter the first piece of text:")
+            # response1 = await client.wait_for("message", check=lambda m: m.author == ctx.author)
         else:
             await message.channel.send(msg)
     except Exception as e:
