@@ -16,6 +16,7 @@ from events_help import help_documentation
 
 magic_item: dict = dict()
 
+#! LOG STORY GUILD SPECIFIC
 
 class MagicItemAttReq(discord.ui.View):
     def __init__(self):
@@ -126,6 +127,33 @@ class DNDCog(commands.Cog):
         await ctx.send(add_magic_item(ctx.author))
 
 
+    @commands.command(name="j")
+    @is_dnd_event_activated()
+    async def join_dnd(self, ctx) -> None:
+        """Verifies if a player is already in the game
+        and adds a player if not"""
+
+        conn = get_db_conn()
+        user = str(ctx.author)
+
+        user_id = find_user(conn, str(user))
+        if user_id is None:
+            with conn.cursor() as cur:
+                cur.execute("""INSERT INTO players(username) VALUES (%s)""", [user])
+                conn.commit()
+            conn.close()
+            await ctx.send(f"`{user} was successfully added into the game!`")
+        else:
+            conn.close()
+            await ctx.send(f"`{user} is already in the game!`")
+
+
+def get_db_conn():
+    """Retrieves database connection"""
+    load_dotenv()
+    return connect(environ["DATABASE_IP"], cursor_factory=RealDictCursor)
+
+
 def clean_magic_item() -> None:
     """Returns magical item global var to a clean state"""
     global magic_item
@@ -135,8 +163,7 @@ def clean_magic_item() -> None:
 def start_dnd_event(msg: str, user: str, events) -> str:
     """Runs psql queries to get data from the database for dnd"""
 
-    load_dotenv()
-    conn = connect(environ["DATABASE_IP"], cursor_factory=RealDictCursor)
+    conn = get_db_conn()
 
     if msg == "//h":
         return help_documentation("dnd")
@@ -242,11 +269,11 @@ def get_magic_item_rarity(conn: connection, rarity_id: int) -> str:
 def add_magic_item(user: str) -> str:
     """Adds a magical item to your username"""
 
-    load_dotenv()
-    conn = connect(environ["DATABASE_IP"], cursor_factory=RealDictCursor)
+    conn = get_db_conn()
 
     user_id = find_user(conn, str(user))
     if user_id is None:
+        conn.close()
         return "`User not found! Add yourself to the game -> //j`"
 
     item_type_id = get_item_type(conn, magic_item["item_type"])
@@ -259,6 +286,7 @@ def add_magic_item(user: str) -> str:
         cur.execute("""INSERT INTO magic_items(user_id, item_name, item_type_id, rarity_id,
         attunement_req, class, description) VALUES (%s, %s, %s, %s, %s, %s, %s)""", item_values)
         conn.commit()
+    conn.close()
     return f"`{magic_item['name']} item is successfully added to your magic items!`"
 
 
@@ -283,22 +311,6 @@ def find_user(conn: connection, user: str) -> int | None:
         cur.execute("""SELECT user_id FROM players WHERE username = %s""", [user])
         id = cur.fetchone()
         return id["user_id"] if id is not None else id
-
-
-def join_dnd(conn: connection, user: str) -> str:
-    """Verifies if a player is already in the game
-    and adds a player if not"""
-
-    with conn.cursor() as cur:
-        cur.execute("""SELECT username FROM players""")
-        users_playing = {i["username"] for i in cur.fetchall()}
-    if user in users_playing:
-        return f"`{user} is already in the game!`"
-    else:
-        with conn.cursor() as cur:
-            cur.execute("""INSERT INTO players(username) VALUES (%s)""", [user])
-            conn.commit()
-        return f"`{user} was successfully added into the game!`"
 
 
 def full_story(conn: connection) -> str:
