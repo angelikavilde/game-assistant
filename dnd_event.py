@@ -1,8 +1,10 @@
 """Dnd Event functions"""
 
 from os import environ
+import asyncio
 
 import discord
+from discord.ext import commands
 from psycopg2 import connect
 from psycopg2.extras import RealDictCursor
 from psycopg2.extensions import connection
@@ -12,25 +14,23 @@ from pandas import DataFrame
 from events_help import help_documentation
 
 
-class DNDAddMagic(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=30)
+magic_item: dict = dict()
 
-    @discord.ui.button(label="test", row=0, style=discord.ButtonStyle.red)
-    async def test1(self, interaction: discord.Interaction, Button: discord.ui.Button):
-        await interaction.response.send_message("I've been clicked")
-    @discord.ui.button(label="test2", row=0, style=discord.ButtonStyle.blurple)
-    async def test2(self, interaction: discord.Interaction, Button: discord.ui.Button):
-        await interaction.response.send_message("I've been clicked")
-    @discord.ui.button(label="test3", row=0, style=discord.ButtonStyle.danger)
-    async def test3(self, interaction: discord.Interaction, Button: discord.ui.Button):
-        await interaction.response.send_message("I've been clicked")
-    @discord.ui.button(label="test4", row=1, style=discord.ButtonStyle.secondary)
-    async def test4(self, interaction: discord.Interaction, Button: discord.ui.Button):
-        await interaction.response.send_message("I've been clicked")
-    @discord.ui.button(label="test5", row=1, style=discord.ButtonStyle.primary)
-    async def test5(self, interaction: discord.Interaction, Button: discord.ui.Button, ):
-        await interaction.response.send_message("I've been clicked")
+
+class MagicItemAttReq(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=15)
+
+    @discord.ui.button(label="yes", row=0, style=discord.ButtonStyle.green)
+    async def att_req(self, interaction: discord.Interaction, Button: discord.ui.Button):
+        global magic_item
+        magic_item["att_req"] = "yes"
+        await interaction.response.send_message("`This item does require a specific class to use it`")
+    @discord.ui.button(label="no", row=0, style=discord.ButtonStyle.red)
+    async def att_not_req(self, interaction: discord.Interaction, Button: discord.ui.Button):
+        global magic_item
+        magic_item["att_req"] = "no"
+        await interaction.response.send_message("`This item does not require a specific class to use it`")
 
 
 class MagicItemRarity(discord.ui.View):
@@ -41,9 +41,77 @@ class MagicItemRarity(discord.ui.View):
             discord.SelectOption(label="Legendary"), discord.SelectOption(label="Artifact"),
             discord.SelectOption(label="Varies"), discord.SelectOption(label="Unknown Rarity")])
 
-    async def select_callback(self, select, interaction): # the function called when the user is done selecting options
-        await interaction.response.send_message(f"Awesome! I like {select.values[0]} too!")
+    async def select_callback(self, interaction, select):
+        """Saves selected item rarity into the magical item dict"""
+        global magic_item
+        item_rarity = select.values[0]
+        magic_item["item_rarity"] = item_rarity
+        indefinite_article = 'an' if item_rarity[0] == "U" or item_rarity[0] == "A" else "a"
+        await interaction.response.send_message(f"`Wow it is {indefinite_article} {item_rarity.lower()} item!`")
 
+
+class MagicItemType(discord.ui.View):
+
+    @discord.ui.select(placeholder = "Choose an item type", min_values=1, max_values=1,
+        options = [discord.SelectOption(label="Armour"), discord.SelectOption(label="Potion"),
+            discord.SelectOption(label="Ring"), discord.SelectOption(label="Rod"),
+            discord.SelectOption(label="Scroll"), discord.SelectOption(label="Staff"),
+            discord.SelectOption(label="Wand"), discord.SelectOption(label="Weapon"),
+            discord.SelectOption(label="Wondrous Item")])
+
+    async def select_callback(self, interaction, select):
+        """Saves selected item type into the magical item dict"""
+        global magic_item
+        item_type = select.values[0]
+        magic_item["item_type"] = item_type
+        indefinite_article = "an" if item_type[0] == "A" else "a"
+        await interaction.response.send_message(f"`Oooo you found {indefinite_article} {item_type.lower()}!`")
+
+
+def is_dnd_event_activated():
+    """Predicate function to verify if command can be ran"""
+    async def predicate(ctx):
+        from bot import servers_obj
+        """Returns True if the DnD event is activated on a server"""
+        return servers_obj.get_server().dnd_event
+    return commands.check(predicate)
+
+
+class DNDCog(commands.Cog):
+
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command(name="dnd_play")
+    @is_dnd_event_activated()
+    async def dnd_specific_command(self, ctx, item_name: str) -> None:
+        global magic_item
+        magic_item["name"] = item_name
+        await ctx.send(content=f"`You are adding an item:` **{item_name}**")
+        await ctx.send(content="Choose an item rarity:", view=MagicItemRarity())
+        await asyncio.sleep(3)
+        await ctx.send(content="Choose an item type:", view=MagicItemType())
+        await asyncio.sleep(3)
+        await ctx.send(content="Can only a specific class use this item?", view=MagicItemAttReq())
+        await asyncio.sleep(10)
+        if magic_item.get("att_req", None) == "yes":
+            await ctx.send("Please enter the name of the class that can use this item:")
+            try:
+                item_class = await self.bot.wait_for("message", check=lambda m: m.author == ctx.author, timeout = 25)
+                magic_item["class"] = item_class.content
+                await ctx.send(f"`The selected class that can use this item is {magic_item['class']}`")
+            except asyncio.TimeoutError: 
+                await ctx.send(f"**{ctx.author}**, you didn't send the class for this item in time. Try again!")
+                return
+        try:
+            await ctx.send("Please enter the item description:")
+            description = await self.bot.wait_for("message", check=lambda m: m.author == ctx.author, timeout = 60)
+            magic_item["description"] = description.content
+            await ctx.send(f"`The item's description is: ` ```{magic_item['description']}```")
+        except asyncio.TimeoutError: 
+            await ctx.send(f"**{ctx.author}**, you didn't send the description for this item in time. Try again!")
+            return
+        #save magical item and clean the global var - at returns clean it too
 
 
 def start_dnd_event(msg: str, user: str, events) -> str:
@@ -201,7 +269,7 @@ def get_item_rarity_type(conn: connection, item_values: list) -> str:
     """Retrieves rarity id by a provided type"""
 
     item_rarity_type = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Legendary','Artifact', 'Varies', 'Unknown Rarity']
-    rarity_index = int(item_values[3]) - 1
+    # rarity_index = int(item_values[3]) - 1
     with conn.cursor() as cur:
         cur.execute("""SELECT rarity_id FROM rarity WHERE rarity_name = %s""", [item_rarity_type[rarity_index]])
         return cur.fetchone()["rarity_id"]
