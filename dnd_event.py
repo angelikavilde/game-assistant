@@ -70,7 +70,7 @@ class MagicItemType(discord.ui.View):
 
 def is_dnd_event_activated():
     """Predicate function to verify if command can be ran"""
-    async def predicate(ctx):
+    async def predicate(*args):
         from bot import servers_obj
         """Returns True if the DnD event is activated on a server"""
         return servers_obj.get_server().dnd_event
@@ -82,10 +82,13 @@ class DNDCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="dnd_play")
+    @commands.command(name="add_magic")
     @is_dnd_event_activated()
     async def dnd_specific_command(self, ctx, item_name: str) -> None:
         global magic_item
+        if len(item_name) > 35:
+            await ctx.send(f"`Item name is too long! Try again!`")
+            return
         magic_item["name"] = item_name
         await ctx.send(content=f"`You are adding an item:` **{item_name}**")
         await ctx.send(content="Choose an item rarity:", view=MagicItemRarity())
@@ -94,14 +97,17 @@ class DNDCog(commands.Cog):
         await asyncio.sleep(3)
         await ctx.send(content="Can only a specific class use this item?", view=MagicItemAttReq())
         await asyncio.sleep(10)
-        if magic_item.get("att_req", None) == "yes":
+        if magic_item.get("att_req") == "yes":
             await ctx.send("Please enter the name of the class that can use this item:")
             try:
                 item_class = await self.bot.wait_for("message", check=lambda m: m.author == ctx.author, timeout = 25)
+                if len(item_class.content) > 25:
+                    await ctx.send(f"`Class name is too long! Try again!`")
+                    return
                 magic_item["class"] = item_class.content
                 await ctx.send(f"`The selected class that can use this item is {magic_item['class']}`")
             except asyncio.TimeoutError: 
-                await ctx.send(f"**{ctx.author}**, you didn't send the class for this item in time. Try again!")
+                await ctx.send(f"**{ctx.author}**, you didn't send the class for this item in time. `Try again!`")
                 return
         try:
             await ctx.send("Please enter the item description:")
@@ -109,8 +115,9 @@ class DNDCog(commands.Cog):
             magic_item["description"] = description.content
             await ctx.send(f"`The item's description is: ` ```{magic_item['description']}```")
         except asyncio.TimeoutError: 
-            await ctx.send(f"**{ctx.author}**, you didn't send the description for this item in time. Try again!")
+            await ctx.send(f"**{ctx.author}**, you didn't send the description for this item in time. `Try again!`")
             return
+        await ctx.send(add_magic_item(ctx.author))
         #save magical item and clean the global var - at returns clean it too
 
 
@@ -221,68 +228,40 @@ def get_magic_item_rarity(conn: connection, rarity_id: int) -> str:
         return cur.fetchone()["rarity_name"]
 
 
-def add_magic_item(conn: connection, user: str, msg: str) -> str:
+def add_magic_item(user: str) -> str:
     """Adds a magical item to your username"""
 
-    incorrect_format = "`Incorrect format for adding a magic item! Refer to //h`"
+    load_dotenv()
+    conn = connect(environ["DATABASE_IP"], cursor_factory=RealDictCursor)
 
-    user_id = find_user(conn, user)
+    user_id = find_user(conn, str(user))
     if user_id is None:
         return "`User not found! Add yourself to the game -> //j`"
 
-    try:
-        item_values = [user_id]
-        values_from_message = msg[12:].replace(", ",",").replace(" ,", ",").split(",")
-        values_from_message = [val if val != "-" else None for val in values_from_message]
-        item_values.extend(values_from_message)
+    item_type_id = get_item_type(conn, magic_item["item_type"])
+    item_rarity_id = get_item_rarity_type(conn, magic_item["item_rarity"])
 
-        # if cannot be made into integer - wrong format
-        int(item_values[2])
-        int(item_values[3])
-
-        # if out of range
-        item_values[6]
-
-    except (IndexError, ValueError):
-        return incorrect_format
-
-    if not 10 > int(item_values[2]) > 0 or not 9 > int(item_values[3]) > 0:
-        return incorrect_format
-    if not item_values[4] in ["yes","no"]:
-        return incorrect_format
-    if item_values[4] == "yes" and item_values[5] is None:
-        return incorrect_format
-    if item_values[4] == "no" and item_values[5] is not None:
-        return incorrect_format
-
-    item_values[2] = get_item_type(conn, item_values)
-    item_values[3] = get_item_rarity_type(conn, item_values)
+    item_values = [user_id, magic_item["name"], item_type_id, item_rarity_id, 
+        magic_item["att_req"], magic_item.get("class"), magic_item["description"]]
 
     with conn.cursor() as cur:
         cur.execute("""INSERT INTO magic_items(user_id, item_name, item_type_id, rarity_id,
         attunement_req, class, description) VALUES (%s, %s, %s, %s, %s, %s, %s)""", item_values)
         conn.commit()
-    return f"`{values_from_message[0]} item is successfully added to your magic items!`"
+    return f"`{magic_item['name']} item is successfully added to your magic items!`"
 
 
-def get_item_rarity_type(conn: connection, item_values: list) -> str:
+def get_item_rarity_type(conn: connection, rarity_name: str) -> int:
     """Retrieves rarity id by a provided type"""
-
-    item_rarity_type = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Legendary','Artifact', 'Varies', 'Unknown Rarity']
-    # rarity_index = int(item_values[3]) - 1
     with conn.cursor() as cur:
-        cur.execute("""SELECT rarity_id FROM rarity WHERE rarity_name = %s""", [item_rarity_type[rarity_index]])
+        cur.execute("""SELECT rarity_id FROM rarity WHERE rarity_name = %s""", [rarity_name])
         return cur.fetchone()["rarity_id"]
 
 
-def get_item_type(conn: connection, item_values: list) -> str:
+def get_item_type(conn: connection, item_type: str) -> int:
     """Retrieves item type id by item type's name"""
-
-    item_type_name = ['Armour','Potion','Ring','Rod','Scroll','Staff','Wand','Weapon','Wondrous Item']
-    type_index = int(item_values[2]) - 1
-
     with conn.cursor() as cur:
-        cur.execute("""SELECT item_type_id FROM item_types WHERE item_type_name = %s""", [item_type_name[type_index]])
+        cur.execute("""SELECT item_type_id FROM item_types WHERE item_type_name = %s""", [item_type])
         return cur.fetchone()["item_type_id"]
 
 
