@@ -154,6 +154,20 @@ class DNDCog(commands.Cog):
         """Returns help command to the user"""
         await ctx.send(help_documentation("dnd"))
 
+
+    @commands.command(name="magic")
+    @is_dnd_event_activated()
+    async def all_magic_items(self, ctx) -> None:
+        """Shows user all of their magical items"""
+        conn = get_db_conn()
+        user_id = find_user(conn, str(ctx.author))
+        if user_id is None:
+            await ctx.send("`User not found! Add yourself to the game -> //j`")
+        else:
+            magic_items_held = get_all_magic_items(conn, user_id)
+            await ctx.send(format_magic_items_displayed(conn, magic_items_held))
+        conn.close()
+
 def get_db_conn():
     """Retrieves database connection"""
     load_dotenv()
@@ -184,15 +198,8 @@ def start_dnd_event(msg: str, user: str, events) -> str:
     if msg[:8] == "//story ":
         return log_story(conn, msg)
 
-    if msg[:7] == "//magic":
-        user_id = find_user(conn, user)
-        if user_id is None:
-            return "`User not found! Add yourself to the game -> //j`"
-
-        magic_items_held = get_all_magic_items(conn, user_id)
-        return format_magic_items_displayed(conn, magic_items_held)
-
     if msg[0:12] == "//use magic ":
+        #! might be able to loop for a select bar 'for loop' to show which item to use
         return use_magic_item(conn, user, msg)
     if msg == "//q":
         events.dnd_event = False
