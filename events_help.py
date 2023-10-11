@@ -14,20 +14,7 @@ __DnD event:__
 * //magic - Shows all **your** magic items recorded
 * //use magic x - Uses magic object by the **item name** (x = item name)
 ** Items with the same name must be recorded as <name> x2 or else will use both at once**
-* //add magic x - Adds a magic item following this format:
-```
-x =  item name, item type, rarity, attunement required, item class, description
-
-Attunement required can only be yes/no, if yes - mention class (if no, put "-" for item class)
-
-Item type must be a number! See below:
-1 - Armour, 2 - Potion, 3 - Ring, 4 - Rod, 5 - Scroll,
-6 - Staff, 7 - Wand, 8 - Weapon, 9 - Wondrous Item
-
-Rarity must be a number! See below:
-1 - Common, 2 - Uncommon, 3 - Rare, 4 - Very Rare, 5 - Legendary,
-6 - Artifact, 7 - Varies, 8 - Unknown Rarity
-```
+* //add magic x - Adds a magic item with the name 'x'
 * //q - Quits the event
 **DnD event is associated with database live on cloud so answer's wait-time might vary**
 """

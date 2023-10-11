@@ -148,6 +148,12 @@ class DNDCog(commands.Cog):
             await ctx.send(f"`{user} is already in the game!`")
 
 
+    @commands.command(name="h")
+    @is_dnd_event_activated()
+    async def dnd_help(self, ctx) -> None:
+        """Returns help command to the user"""
+        await ctx.send(help_documentation("dnd"))
+
 def get_db_conn():
     """Retrieves database connection"""
     load_dotenv()
@@ -164,12 +170,6 @@ def start_dnd_event(msg: str, user: str, events) -> str:
     """Runs psql queries to get data from the database for dnd"""
 
     conn = get_db_conn()
-
-    if msg == "//h":
-        return help_documentation("dnd")
-
-    if msg == "//j":
-        return join_dnd(conn, user)
 
     if msg == "//storyline":
         return full_story(conn)
@@ -192,16 +192,12 @@ def start_dnd_event(msg: str, user: str, events) -> str:
         magic_items_held = get_all_magic_items(conn, user_id)
         return format_magic_items_displayed(conn, magic_items_held)
 
-    # if msg[0:12] == "//add magic ":
-    #     return "add magic item"
-    #     # return add_magic_item(conn, user, msg)
-
     if msg[0:12] == "//use magic ":
         return use_magic_item(conn, user, msg)
     if msg == "//q":
         events.dnd_event = False
         return "`Dungeons & Dragons event was ended!`"
-    return ""
+    return "" #! Will have to change to be an overall command
 
 
 def get_all_magic_items(conn: connection, user_id) -> dict:
