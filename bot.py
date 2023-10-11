@@ -2,7 +2,6 @@
 
 from os import environ
 from random import choice
-import asyncio
 
 import discord
 from discord.ext import commands
@@ -11,10 +10,8 @@ from dotenv import load_dotenv
 from discord.message import Message
 
 from easter_egg import easter_egg_func
-from dnd_event import start_dnd_event, MagicItemRarity, MagicItemType, MagicItemAttReq, DNDCog
+from dnd_event import DNDCog
 from events_help import help_documentation
-from codenames import start_codenames
-from amongus import start_among_us
 from rps import RockPaperScissors
 
 
@@ -186,62 +183,15 @@ def run_discord_bot() -> None:
             bot_message = message
             return
 
-        user = str(message.author.global_name) #TODO fix the name (only nickname vers used in text else dis name)
-        username = str(message.author)
+        user = str(message.author.global_name)
         msg = str(message.content).lower()
         chnl = str(message.channel)
 
         print(f"{user} said: '{msg}' ({chnl}), guild: {guild_id}")
 
-        # if msg[0:2] == "//":
-        #     await event_run(message, msg, username)
-        # else:
-        #     await easter_egg_func(message, msg)
+        await easter_egg_func(message, msg)
 
     client.run(TOKEN)
-
-
-async def handle_event_responses(message: Message, msg: str) -> None:
-    """Events when activated allow to run '/' commands.
-    Some might however not exist"""
-
-    try:
-        if msg == "add magic item":
-            await message.channel.send(content="test-2", view=MagicItemRarity())
-            await message.channel.send(content="t", view=MagicItemType())
-            await message.channel.send(content="t", view=MagicItemAttReq())
-            from dnd_event import magic_item
-            if magic_item.get("att_req", None) == "yes":
-                await message.channel.send(content="""This item requires a specific class
-                        to use it. Please share - which""", view=MagicItemAttReq())
-            # await message.channel.send("Please enter the first piece of text:")
-            # response1 = await client.wait_for("message", check=lambda m: m.author == ctx.author)
-        else:
-            await message.channel.send(msg)
-    except Exception as e:
-        print(e)
-        await message.channel.send("This is not an allowed command for this event. Try '//h' for help!")
-
-
-async def event_run(message: Message, msg: str, user: str) -> None:
-    """Handles // commands"""
-
-    if servers_obj.get_server().codenames_event:
-        await message.delete()
-        response = start_codenames(msg, user, servers_obj)
-        await handle_event_responses(message, response)
-
-    elif servers_obj.get_server().amongus_event:
-        await message.delete()
-        await start_among_us(message, msg, servers_obj)
-
-    elif servers_obj.get_server().dnd_event:
-        response = start_dnd_event(msg, user, servers_obj)
-        await handle_event_responses(message, response)
-
-    else:
-        await message.channel.send("""`Double slash commands only work during server events.
-There is no event running! !h or !help for event list.`""")
 
 
 async def embed_for_events(interaction: discord.Interaction, event: str, image_url: str) -> None:
