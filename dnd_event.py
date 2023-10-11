@@ -89,10 +89,12 @@ class DNDCog(commands.Cog):
         """Retrieves values for a magical item to be added"""
         item_name = " ".join(args)
         global magic_item
+
         if len(item_name) > 35:
             await ctx.send(f"`Item name is too long! Try again!`")
             clean_magic_item()
             return
+
         magic_item["name"] = item_name
         await ctx.send(content=f"`You are adding an item:` **{item_name}**")
         await ctx.send(content="Choose an item rarity:", view=MagicItemRarity())
@@ -101,6 +103,7 @@ class DNDCog(commands.Cog):
         await asyncio.sleep(3)
         await ctx.send(content="Can only a specific class use this item?", view=MagicItemAttReq())
         await asyncio.sleep(10)
+
         if magic_item.get("att_req") == "yes":
             await ctx.send("Please enter the name of the class that can use this item:")
             try:
@@ -109,17 +112,20 @@ class DNDCog(commands.Cog):
                     await ctx.send(f"`Class name is too long! Try again!`")
                     clean_magic_item()
                     return
+
                 magic_item["class"] = item_class.content
                 await ctx.send(f"`The selected class that can use this item is {magic_item['class']}`")
             except asyncio.TimeoutError: 
                 await ctx.send(f"**{ctx.author}**, you didn't send the class for this item in time. `Try again!`")
                 clean_magic_item()
                 return
+
         try:
             await ctx.send("Please enter the item description:")
             description = await self.bot.wait_for("message", check=lambda m: m.author == ctx.author, timeout = 60)
             magic_item["description"] = description.content
             await ctx.send(f"`The item's description is: ` ```{magic_item['description']}```")
+
         except asyncio.TimeoutError: 
             await ctx.send(f"**{ctx.author}**, you didn't send the description for this item in time. `Try again!`")
             clean_magic_item()
@@ -167,6 +173,7 @@ class DNDCog(commands.Cog):
             magic_items_held = get_all_magic_items(conn, user_id)
             await ctx.send(format_magic_items_displayed(conn, magic_items_held))
         conn.close()
+
 
 def get_db_conn():
     """Retrieves database connection"""
