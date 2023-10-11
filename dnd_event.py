@@ -84,10 +84,13 @@ class DNDCog(commands.Cog):
 
     @commands.command(name="add_magic")
     @is_dnd_event_activated()
-    async def dnd_specific_command(self, ctx, item_name: str) -> None:
+    async def get_magical_item_values(self, ctx, *args) -> None:
+        """Retrieves values for a magical item to be added"""
+        item_name = " ".join(args)
         global magic_item
         if len(item_name) > 35:
             await ctx.send(f"`Item name is too long! Try again!`")
+            clean_magic_item()
             return
         magic_item["name"] = item_name
         await ctx.send(content=f"`You are adding an item:` **{item_name}**")
@@ -103,11 +106,13 @@ class DNDCog(commands.Cog):
                 item_class = await self.bot.wait_for("message", check=lambda m: m.author == ctx.author, timeout = 25)
                 if len(item_class.content) > 25:
                     await ctx.send(f"`Class name is too long! Try again!`")
+                    clean_magic_item()
                     return
                 magic_item["class"] = item_class.content
                 await ctx.send(f"`The selected class that can use this item is {magic_item['class']}`")
             except asyncio.TimeoutError: 
                 await ctx.send(f"**{ctx.author}**, you didn't send the class for this item in time. `Try again!`")
+                clean_magic_item()
                 return
         try:
             await ctx.send("Please enter the item description:")
@@ -116,9 +121,15 @@ class DNDCog(commands.Cog):
             await ctx.send(f"`The item's description is: ` ```{magic_item['description']}```")
         except asyncio.TimeoutError: 
             await ctx.send(f"**{ctx.author}**, you didn't send the description for this item in time. `Try again!`")
+            clean_magic_item()
             return
         await ctx.send(add_magic_item(ctx.author))
-        #save magical item and clean the global var - at returns clean it too
+
+
+def clean_magic_item() -> None:
+    """Returns magical item global var to a clean state"""
+    global magic_item
+    magic_item = dict()
 
 
 def start_dnd_event(msg: str, user: str, events) -> str:
@@ -154,9 +165,9 @@ def start_dnd_event(msg: str, user: str, events) -> str:
         magic_items_held = get_all_magic_items(conn, user_id)
         return format_magic_items_displayed(conn, magic_items_held)
 
-    if msg[0:12] == "//add magic ":
-        return "add magic item"
-        # return add_magic_item(conn, user, msg)
+    # if msg[0:12] == "//add magic ":
+    #     return "add magic item"
+    #     # return add_magic_item(conn, user, msg)
 
     if msg[0:12] == "//use magic ":
         return use_magic_item(conn, user, msg)
