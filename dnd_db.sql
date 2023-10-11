@@ -17,9 +17,11 @@ INSERT INTO item_types (item_type_name) VALUES
 CREATE TABLE log_story(
     story_id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     date_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    story VARCHAR(70));
+    story VARCHAR(70))
+    guild_id BIGINT;
 
 CREATE INDEX date ON log_story (date_time);
+CREATE INDEX guild ON log_story (guild_id);
 
 CREATE TABLE players(
     user_id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
