@@ -15,7 +15,7 @@ __DnD event:__
 * //use_magic x - Uses magic object by the **item name** (x = item name)
 ** Items with the same name must be recorded as <name> x2 or else will use both at once**
 * //add_magic x - Adds a magic item with the name 'x'
-* //q - Quits the event
+* //q - To finish the event
 **DnD event is associated with database live on cloud so answer's wait-time might vary**
 """
         case "CodeNames":
@@ -30,9 +30,9 @@ __Run:__
         case "AmongUs":
             return """
 AmongUs event commands:
-* //d - pronounce yourself dead
-* //n - resets the game
-* //q - finishes the game
+* //d - Pronounce yourself dead
+* //n - Resets the game
+* //q - To finish the event
 """
         case "bot":
             return """
