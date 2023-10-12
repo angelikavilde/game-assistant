@@ -2,6 +2,7 @@
 
 from os import environ
 import asyncio
+from datetime import datetime
 
 import discord
 from discord.ext import commands
@@ -148,7 +149,9 @@ class DNDCog(commands.Cog):
                 cur.execute("""INSERT INTO players(username) VALUES (%s)""", [user])
                 conn.commit()
             conn.close()
-            await ctx.send(f"`{user} was successfully added into the game!`")
+            response = discord.Embed(title=f"{user} was successfully added into the game!", description=f"* Dungeons & Dragons", color=discord.Colour(value=0x8f3ea3))
+            response.set_image(url=ctx.author.avatar)
+            await ctx.send("New user added:", embed=response)
         else:
             conn.close()
             await ctx.send(f"`{user} is already in the game!`")
@@ -175,6 +178,50 @@ class DNDCog(commands.Cog):
         conn.close()
 
 
+    @commands.command(name="story")
+    @is_dnd_event_activated()
+    async def add_story(self, ctx, *args) -> None:
+        """Logs in the added story"""
+        story = " ".join(args)
+        await ctx.send(log_story(story)) #! add guild
+
+
+    @commands.command(name="story_date")
+    @is_dnd_event_activated()
+    async def show_story_with_date(self, ctx, date) -> None:
+        """Shows the logged story from a provided date"""
+        if not verify_date(date):
+            await ctx.send("```The date entered is in the wrong format. Check -> //h```")
+        try:
+            await ctx.send(part_story(date))
+        except: #! add error type
+            await ctx.send("```The date entered has no data. Try //storyline```") #! add guild
+
+
+    @commands.command(name="storyline")
+    @is_dnd_event_activated()
+    async def show_story(self, ctx) -> None:
+        """Shows all the logged story"""
+        await ctx.send(full_story()) #! add guild
+
+
+    @commands.command(name="use_magic")
+    @is_dnd_event_activated()
+    async def use_magical_item(self, ctx, *args) -> None:
+        """Uses selected magical item"""
+        item_name = " ".join(args)
+        await ctx.send(use_magic_item(str(ctx.author), item_name))
+
+
+def verify_date(date: str) -> bool:
+        """Verifies if the date is in the correct format"""
+        try:
+            datetime.strptime(date, "%d/%m")
+            return True
+        except ValueError:
+            return False
+
+
 def get_db_conn():
     """Retrieves database connection"""
     load_dotenv()
@@ -187,33 +234,6 @@ def clean_magic_item() -> None:
     magic_item = dict()
 
 
-def start_dnd_event(msg: str, user: str, events) -> str:
-    """Runs psql queries to get data from the database for dnd"""
-
-    conn = get_db_conn()
-
-    if msg == "//storyline":
-        return full_story(conn)
-
-    if msg[0:12] == "//storyline ":
-        date = msg[12:].strip()
-        try:
-            return part_story(conn, date)
-        except:
-            return "```The date entered is in the wrong format or has no data. Try //storyline```"
-
-    if msg[:8] == "//story ":
-        return log_story(conn, msg)
-
-    if msg[0:12] == "//use magic ":
-        #! might be able to loop for a select bar 'for loop' to show which item to use
-        return use_magic_item(conn, user, msg)
-    if msg == "//q":
-        events.dnd_event = False
-        return "`Dungeons & Dragons event was ended!`"
-    return "" #! Will have to change to be an overall command
-
-
 def get_all_magic_items(conn: connection, user_id) -> dict:
     """Returns all magic items user holds"""
 
@@ -222,8 +242,10 @@ def get_all_magic_items(conn: connection, user_id) -> dict:
         return cur.fetchall()
 
 
-def use_magic_item(conn: connection, user: str, msg: str) -> str:
+def use_magic_item(user: str, msg: str) -> str:
     """Deletes a magic item from user's magic items if exists"""
+
+    conn = get_db_conn()
 
     user_id = find_user(conn, user)
     item_name = msg[12:].strip()
@@ -232,14 +254,17 @@ def use_magic_item(conn: connection, user: str, msg: str) -> str:
     all_users_magic_items = [item["item_name"] for item in all_users_magic_items]
 
     if user_id is None:
+        conn.close()
         return "`User not found! Add yourself to the game -> //j`"
 
     if not item_name in all_users_magic_items:
+        conn.close()
         return f"`{user} does not currently hold {item_name}! Check //magic for your magical items!`"
 
     with conn.cursor() as cur:
         cur.execute("""DELETE FROM magic_items WHERE user_id = %s AND item_name = %s""", [user_id, item_name])
         conn.commit()
+    conn.close()
     return f"`{item_name} was successfully used by {user}`"
 
 
@@ -323,30 +348,35 @@ def find_user(conn: connection, user: str) -> int | None:
         return id["user_id"] if id is not None else id
 
 
-def full_story(conn: connection) -> str:
+def full_story() -> str:
     """Returns full previously logged story"""
+
+    conn = get_db_conn()
 
     with conn.cursor() as cur:
         cur.execute("SELECT * FROM log_story")
         data = DataFrame(cur.fetchall())[["date_time","story"]]
+    conn.close()
     return story_table_displayed(data)
 
 
-def part_story(conn: connection, date: str) -> str:
+def part_story(date: str) -> str:
     """Returns all the story logged from a provided date"""
+
+    conn = get_db_conn()
 
     with conn.cursor() as cur:
         cur.execute("""SELECT * FROM log_story WHERE EXTRACT(day
         FROM date_time) = %s AND EXTRACT(month
             FROM date_time) = %s""", date.split("/"))
         data = cur.fetchall()
+    conn.close()
     return story_table_displayed(DataFrame(data)[["date_time", "story"]])
 
 
-def log_story(conn, msg: str):
+def log_story(story: str) -> str:
     """Adds story logged into the chat into the database"""
 
-    story = msg[8:]
     split_story = story.split(" ")
     stories = []
     story = ""
@@ -360,10 +390,13 @@ def log_story(conn, msg: str):
         if piece is split_story[-1]:
             stories.append(story.strip())
 
+    conn = get_db_conn()
+
     for piece in stories:
             with conn.cursor() as cur:
                 cur.execute("""INSERT INTO log_story(story) VALUES (%s)""", [piece])
                 conn.commit()
+    conn.close()
     return "`Story was successfully logged!`"
 
 
