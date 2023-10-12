@@ -21,11 +21,13 @@ __DnD event:__
         case "CodeNames":
             return """
 __Run:__
-* //j - To join the event (will tell you if already joined)
-* //l - To leave the event (this and below will tell you if not joined)
+* //j - To join the event
+* //a x - To add player x to the game
+* //l - To leave the event
 * //d x - To delete a player x from the game
 * //t - To make teams
 * //q - To finish the event
+* //show - To show currently joined players
 """
         case "AmongUs":
             return """
