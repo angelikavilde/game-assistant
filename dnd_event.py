@@ -149,7 +149,8 @@ class DNDCog(commands.Cog):
                 cur.execute("""INSERT INTO players(username) VALUES (%s)""", [user])
                 conn.commit()
             conn.close()
-            response = discord.Embed(title=f"{user} was successfully added into the game!", description=f"* Dungeons & Dragons", color=discord.Colour(value=0x8f3ea3))
+            response = discord.Embed(title=f"{user} was successfully added into the game!",
+                            description=f"* Dungeons & Dragons", color=discord.Colour(value=0x00FF00))
             response.set_image(url=ctx.author.avatar)
             await ctx.send("New user added:", embed=response)
         else:
