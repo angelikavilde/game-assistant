@@ -10,6 +10,7 @@ import requests
 from dotenv import load_dotenv
 from discord.message import Message
 
+from amongus import clean_dead_roles, AmongUsCog
 from easter_egg import easter_egg_func
 from dnd_event import DNDCog
 from events_help import help_documentation
@@ -69,10 +70,11 @@ class BotEvents():
             return "Dungeons & Dragons"
 
     def disable_events(self) -> None:
-        """Disables all possible events"""
+        """Resets all bot's events"""
         self.codenames_event = False
         self.amongus_event = False
         self.dnd_event = False
+        self.users_playing = []
 
 
 bot_message: discord.message.Message = None
@@ -189,6 +191,8 @@ def run_discord_bot() -> None:
     async def quit_event(ctx: Context):
         if await check_if_any_events_are_running(ctx):
             event = servers_obj.get_server().get_active_event_name()
+            if event == "AmongUs":
+                await clean_dead_roles(ctx)
             servers_obj.get_server().disable_events()
             await ctx.send(f"`{event} event was finished!`")
     
@@ -204,7 +208,9 @@ def run_discord_bot() -> None:
         print(f"{client.user} is now running!")
         await client.tree.sync()
         dnd_cog = DNDCog(client)
+        amongus_cog = AmongUsCog(client)
         await client.add_cog(dnd_cog)
+        await client.add_cog(amongus_cog)
         print("Added event commands!")
 
 
