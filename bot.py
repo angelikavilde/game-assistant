@@ -80,6 +80,14 @@ guild_id: int = 404
 servers_obj: 'Servers' = Servers.create_instance()
 
 
+async def check_if_any_events_are_running(ctx : Context) -> bool:
+    """Returns bool whether any event is active"""
+    if not servers_obj.get_server().get_all_event_statuses():
+        await ctx.send("```There is currently no event running. Activate one -> /play```")
+        return False
+    return True
+
+
 async def check_events_status(interaction: discord.Interaction, servers: 'Servers') -> bool:
     """Verifies the events' running statuses to make sure new event can be started"""
     if servers.get_server().get_all_event_statuses():
@@ -107,7 +115,7 @@ class StartEvent(discord.ui.View):
         choices = ["scissors", "rock", "paper"]
         bot_chose = choice(choices)
         await interaction.response.send_message(content="I've made my choice. Choose yours!",
-                                        view=RockPaperScissors(bot_chose, bot_message))
+                                        view=RockPaperScissors(bot_chose))
 
     @discord.ui.button(label="AmongUs", row=0, style=discord.ButtonStyle.gray)
     async def among_us(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
@@ -164,7 +172,7 @@ def run_discord_bot() -> None:
         choices = ["scissors", "rock", "paper"]
         bot_chose = choice(choices)
         await interaction.response.send_message(content="I've made my choice. Choose yours!",
-                                        view=RockPaperScissors(bot_chose, bot_message))
+                                        view=RockPaperScissors(bot_chose))
 
     @client.tree.command(name="kill")
     async def kill(self: discord.interactions.Interaction) -> None:
@@ -179,12 +187,16 @@ def run_discord_bot() -> None:
 
     @client.command(name="q")
     async def quit_event(ctx: Context):
-        if not servers_obj.get_server().get_all_event_statuses():
-            await ctx.send("```There is currently no event running. Activate one -> /play```")
-        else:
+        if await check_if_any_events_are_running(ctx):
             event = servers_obj.get_server().get_active_event_name()
             servers_obj.get_server().disable_events()
             await ctx.send(f"`{event} event was finished!`")
+    
+    @client.command(name="h")
+    async def help_event(ctx: Context):
+        if await check_if_any_events_are_running(ctx):
+            event = servers_obj.get_server().get_active_event_name()
+            await ctx.send(help_documentation(event))
 
 
     @client.event
