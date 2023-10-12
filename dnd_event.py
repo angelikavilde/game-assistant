@@ -157,13 +157,6 @@ class DNDCog(commands.Cog):
             await ctx.send(f"`{user} is already in the game!`")
 
 
-    @commands.command(name="h")
-    @is_dnd_event_activated()
-    async def dnd_help(self, ctx) -> None:
-        """Returns help command to the user"""
-        await ctx.send(help_documentation("dnd"))
-
-
     @commands.command(name="magic")
     @is_dnd_event_activated()
     async def all_magic_items(self, ctx) -> None:
