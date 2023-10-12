@@ -32,11 +32,14 @@ class AmongUsCog(Cog):
             await ctx.send(f"`{str(ctx.author)} is already laying in the grave!`")
 
 
-# if user_chose == "//n":
-#     for member in events.users_playing:
-#         await member_role_changed(message, member, False)
-#     events.users_playing = []
-#     await message.channel.send("`AmongUs event was restarted!`")
+    @command(name="n")
+    @is_amongus_event_activated()
+    async def reset_game(self, ctx: Context) -> None:
+        """Restarts the among-us event"""
+        from bot import servers_obj
+        await clean_dead_roles(ctx)
+        servers_obj.get_server().users_playing = []
+        await ctx.send("`AmongUs event was restarted!`")
 
 
 async def clean_dead_roles(ctx: Context) -> None:
