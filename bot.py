@@ -248,7 +248,3 @@ async def embed_for_events(interaction: Interaction, event: str, image_url: str)
     response = Embed(title="Event was started:", description=f"* {event}", color=Colour(value=0x8f3ea3))
     response.set_image(url=image_url)
     await interaction.response.send_message(content="Check game commands with //h", embed=response)
-
-
-if __name__ == '__main__':
-    run_discord_bot()
