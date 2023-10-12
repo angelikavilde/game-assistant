@@ -9,8 +9,8 @@ from discord.ext.commands.context import Context
 def is_codenames_event_activated():
     """Predicate function to verify if command can be ran"""
     async def predicate(*args):
-        from bot import servers_obj
         """Returns True if the CodeNames event is activated on a server"""
+        from bot import servers_obj
         return servers_obj.get_server().codenames_event
     return check(predicate)
 
