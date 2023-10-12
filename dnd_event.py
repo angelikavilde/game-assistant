@@ -72,9 +72,8 @@ class MagicItemType(View):
 def is_dnd_event_activated():
     """Predicate function to verify if command can be ran"""
     async def predicate(*args):
-        from bot import servers_obj
         """Returns True if the DnD event is activated on a server"""
-        print(9, servers_obj.get_server().dnd_event)
+        from bot import servers_obj
         return servers_obj.get_server().dnd_event
     return commands.check(predicate)
 
@@ -177,10 +176,8 @@ class DNDCog(commands.Cog):
     async def add_story(self, ctx, *args) -> None:
         """Logs in the added story"""
         story = " ".join(args)
-        print(ctx.channel.guild.id)
-        # guild_id = ctx.channel.guild.id
-        await ctx.send("yes")
-        # await ctx.send(log_story(story)) #! add guild
+        guild_id = ctx.channel.guild.id
+        await ctx.send(log_story(story, guild_id))
 
 
     @commands.command(name="story_date")
@@ -372,7 +369,7 @@ def part_story(date: str) -> str:
     return story_table_displayed(DataFrame(data)[["date_time", "story"]])
 
 
-def log_story(story: str) -> str:
+def log_story(story: str, guild_id: int) -> str:
     """Adds story logged into the chat into the database"""
 
     split_story = story.split(" ")
@@ -391,9 +388,9 @@ def log_story(story: str) -> str:
     conn = get_db_conn()
 
     for piece in stories:
-            with conn.cursor() as cur:
-                cur.execute("""INSERT INTO log_story(story) VALUES (%s)""", [piece])
-                conn.commit()
+        with conn.cursor() as cur:
+            cur.execute("""INSERT INTO log_story(story, guild_id) VALUES (%s, %s)""", [piece, guild_id])
+            conn.commit()
     conn.close()
     return "`Story was successfully logged!`"
 
