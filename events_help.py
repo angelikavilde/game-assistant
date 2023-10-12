@@ -1,24 +1,24 @@
-"""To keep codes readable, help commands are separated"""
+"""To keep scripts more readable, help commands are separated"""
 
 def help_documentation(event: str):
     """Returns formatted string of documentation for an event"""
 
     match event:
-        case "dnd":
+        case "Dungeons & Dragons":
             return """
 __DnD event:__
 * //j - Adds yourself as a player **to the database of players**
 * //story x - Logs in a story (x) and saved for an event on today's date
 * //storyline - Shows all recorded history log
-* //storyline 05/06 - Shows all recorded log on 5th of June
+* //story_date 05/06 - Shows all recorded log on 5th of June
 * //magic - Shows all **your** magic items recorded
-* //use magic x - Uses magic object by the **item name** (x = item name)
+* //use_magic x - Uses magic object by the **item name** (x = item name)
 ** Items with the same name must be recorded as <name> x2 or else will use both at once**
-* //add magic x - Adds a magic item with the name 'x'
+* //add_magic x - Adds a magic item with the name 'x'
 * //q - Quits the event
 **DnD event is associated with database live on cloud so answer's wait-time might vary**
 """
-        case "codenames":
+        case "CodeNames":
             return """
 __Run:__
 * //j - To join the event (will tell you if already joined)
@@ -27,7 +27,7 @@ __Run:__
 * //t - To make teams
 * //q - To finish the event
 """
-        case "amongus":
+        case "AmongUs":
             return """
 AmongUs event commands:
 * //d - pronounce yourself dead
