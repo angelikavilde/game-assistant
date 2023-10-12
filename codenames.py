@@ -20,35 +20,35 @@ class CodeNamesCog(Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @command(name="d")
+    @command(name="rm")
     @is_codenames_event_activated()
-    async def delete_user(self, ctx: Context, *args) -> None:
+    async def remove_user(self, ctx: Context, *args) -> None:
         """Deletes a chosen player (not yourself) from an event"""
         user = " ".join(args)
         await ctx.send(remove_a_player(user))
 
-    @command(name="l")
+    @command(name="leave")
     @is_codenames_event_activated()
     async def leave_event(self, ctx: Context) -> None:
         """Removes a player from an event"""
         user = str(ctx.author)
         await ctx.send(remove_a_player(user))
 
-    @command(name="j")
+    @command(name="join")
     @is_codenames_event_activated()
     async def join_event(self, ctx: Context) -> None:
         """Adds a player to the event"""
         user = str(ctx.author)
         await ctx.send(add_player(user))
 
-    @command(name="a")
+    @command(name="add")
     @is_codenames_event_activated()
     async def add_to_event(self, ctx: Context, *args) -> None:
         """Adds another player (not yourself) to the event"""
         user = " ".join(args)
         await ctx.send(add_player(user))
 
-    @command(name="t")
+    @command(name="teams")
     @is_codenames_event_activated()
     async def display_teams(self, ctx: Context) -> None:
         """Displays random teams"""

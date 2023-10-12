@@ -1,18 +1,20 @@
-"""File that executes the bots functions"""
+"""File that includes the bot's commands and event data"""
 
 from os import environ
 from random import choice
 
-import discord
+from discord import ButtonStyle, Colour, Embed, Interaction, Intents
 from discord.ext import commands
 from discord.ext.commands.context import Context
-import requests
-from dotenv import load_dotenv
 from discord.message import Message
+from discord.ui import Button, View, button
+from dotenv import load_dotenv
+from requests import get
 
-from amongus import clean_dead_roles, AmongUsCog
-from easter_egg import easter_egg_func
+from amongus import AmongUsCog, clean_dead_roles
+from codenames import CodeNamesCog
 from dnd_event import DNDCog
+from easter_egg import easter_egg_func
 from events_help import help_documentation
 from rps import RockPaperScissors
 
@@ -77,7 +79,7 @@ class BotEvents():
         self.users_playing = []
 
 
-bot_message: discord.message.Message = None
+bot_message: Message = None
 guild_id: int = 404
 servers_obj: 'Servers' = Servers.create_instance()
 
@@ -90,7 +92,7 @@ async def check_if_any_events_are_running(ctx : Context) -> bool:
     return True
 
 
-async def check_events_status(interaction: discord.Interaction, servers: 'Servers') -> bool:
+async def check_events_status(interaction: Interaction, servers: 'Servers') -> bool:
     """Verifies the events' running statuses to make sure new event can be started"""
     if servers.get_server().get_all_event_statuses():
         await interaction.response.send_message("`There is already an event running. //h for event info or //q to finish!`")
@@ -101,33 +103,33 @@ async def check_events_status(interaction: discord.Interaction, servers: 'Server
     return True
 
 
-class StartEvent(discord.ui.View):
+class StartEvent(View):
     def __init__(self):
         super().__init__(timeout=30)
 
-    @discord.ui.button(label="CodeNames", row=0, style=discord.ButtonStyle.gray)
-    async def codenames(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
+    @button(label="CodeNames", row=0, style=ButtonStyle.gray)
+    async def codenames(self, interaction: Interaction, Button: Button) -> None:
         if not await check_events_status(interaction, servers_obj):
             servers_obj.get_server().codenames_event = True
             link = "https://cdn.discordapp.com/attachments/1130455303087984704/1144308331922600026/Screenshot_2023-08-24_at_17.32.32.png"
             await embed_for_events(interaction, "CodeNames", link)
 
-    @discord.ui.button(label="RockPaperScissors", row=0, style=discord.ButtonStyle.gray)
-    async def rps(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
+    @button(label="RockPaperScissors", row=0, style=ButtonStyle.gray)
+    async def rps(self, interaction: Interaction, Button: Button) -> None:
         choices = ["scissors", "rock", "paper"]
         bot_chose = choice(choices)
         await interaction.response.send_message(content="I've made my choice. Choose yours!",
                                         view=RockPaperScissors(bot_chose))
 
-    @discord.ui.button(label="AmongUs", row=0, style=discord.ButtonStyle.gray)
-    async def among_us(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
+    @button(label="AmongUs", row=0, style=ButtonStyle.gray)
+    async def among_us(self, interaction: Interaction, Button: Button) -> None:
         if not await check_events_status(interaction, servers_obj):
             servers_obj.get_server().amongus_event = True
             link = "https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372"
             await embed_for_events(interaction, "Among Us", link)
 
-    @discord.ui.button(label="DnD", row=0, style=discord.ButtonStyle.gray)
-    async def dnd(self, interaction: discord.Interaction, Button: discord.ui.Button) -> None:
+    @button(label="DnD", row=0, style=ButtonStyle.gray)
+    async def dnd(self, interaction: Interaction, Button: Button) -> None:
         if not await check_events_status(interaction, servers_obj):
             servers_obj.get_server().dnd_event = True
             link = "https://db4sgowjqfwig.cloudfront.net/campaigns/112103/assets/550235/Bugbear.png?1453822798"
@@ -140,36 +142,36 @@ def run_discord_bot() -> None:
 
     load_dotenv()
     TOKEN = environ["TOKEN"]
-    intents = discord.Intents.default()
+    intents = Intents.default()
     intents.message_content = True
     intents.guilds = True
     client = commands.Bot(intents=intents, command_prefix="//")
 
 
     @client.tree.command(name="aff")
-    async def affirm(interaction: discord.Interaction) -> None:
+    async def affirm(interaction: Interaction) -> None:
         """Returns an affirmation text from an API"""
 
-        request = requests.get("https://www.affirmations.dev/")
+        request = get("https://www.affirmations.dev/")
         affirmation = request.json()
         await interaction.response.send_message(affirmation["affirmation"])
 
     @client.tree.command(name="joke")
-    async def joke(interaction: discord.Interaction) -> None:
+    async def joke(interaction: Interaction) -> None:
         """Returns programmer joke from an API"""
 
-        request = requests.get("https://official-joke-api.appspot.com/jokes/programming/random")
+        request = get("https://official-joke-api.appspot.com/jokes/programming/random")
         joke = request.json()
         await interaction.response.send_message(joke[0]["setup"] + "\n" + joke[0]["punchline"])
 
     @client.tree.command(name="play")
-    async def play(interaction: discord.Interaction) -> None:
+    async def play(interaction: Interaction) -> None:
         """Gives options for games to activate"""
         await interaction.response.send_message(
             content="Let's play a game!", view=StartEvent())
 
     @client.tree.command(name="rps")
-    async def r_p_s(interaction: discord.Interaction) -> None:
+    async def r_p_s(interaction: Interaction) -> None:
         """Play rock-paper-scissors with the bot"""
         choices = ["scissors", "rock", "paper"]
         bot_chose = choice(choices)
@@ -177,16 +179,18 @@ def run_discord_bot() -> None:
                                         view=RockPaperScissors(bot_chose))
 
     @client.tree.command(name="kill")
-    async def kill(self: discord.interactions.Interaction) -> None:
+    async def kill(interaction: Interaction) -> None:
         """Kills last bot's message"""
         if bot_message is not None:
             await bot_message.delete()
     
     @client.tree.command(name="help")
-    async def help(interaction: discord.Interaction) -> None:
+    async def help(interaction: Interaction) -> None:
         """Sends bot's help documentation"""
         await interaction.response.send_message(help_documentation("bot"))
 
+
+    # Global event commands
     @client.command(name="q")
     async def quit_event(ctx: Context):
         if await check_if_any_events_are_running(ctx):
@@ -209,8 +213,10 @@ def run_discord_bot() -> None:
         await client.tree.sync()
         dnd_cog = DNDCog(client)
         amongus_cog = AmongUsCog(client)
+        codenames_cog = CodeNamesCog(client)
         await client.add_cog(dnd_cog)
         await client.add_cog(amongus_cog)
+        await client.add_cog(codenames_cog)
         print("Added event commands!")
 
 
@@ -237,9 +243,12 @@ def run_discord_bot() -> None:
     client.run(TOKEN)
 
 
-async def embed_for_events(interaction: discord.Interaction, event: str, image_url: str) -> None:
+async def embed_for_events(interaction: Interaction, event: str, image_url: str) -> None:
     """Sends an event started embed"""
-
-    response = discord.Embed(title="Event was started:", description=f"* {event}", color=discord.Colour(value=0x8f3ea3))
+    response = Embed(title="Event was started:", description=f"* {event}", color=Colour(value=0x8f3ea3))
     response.set_image(url=image_url)
     await interaction.response.send_message(content="Check game commands with //h", embed=response)
+
+
+if __name__ == '__main__':
+    run_discord_bot()

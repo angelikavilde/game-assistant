@@ -1,47 +1,46 @@
 """Dnd Event functions"""
 
-from os import environ
-import asyncio
+from asyncio import sleep, TimeoutError
 from datetime import datetime
+from os import environ
 
-import discord
+from discord import ButtonStyle, Colour, Embed, Interaction, SelectOption
 from discord.ext import commands
-from psycopg2 import connect
-from psycopg2.extras import RealDictCursor
-from psycopg2.extensions import connection
+from discord.ui import Button, View, button, select
 from dotenv import load_dotenv
 from pandas import DataFrame
-
-from events_help import help_documentation
+from psycopg2 import connect
+from psycopg2.extensions import connection
+from psycopg2.extras import RealDictCursor
 
 
 magic_item: dict = dict()
 
 #! LOG STORY GUILD SPECIFIC
 
-class MagicItemAttReq(discord.ui.View):
+class MagicItemAttReq(View):
     def __init__(self):
         super().__init__(timeout=15)
 
-    @discord.ui.button(label="yes", row=0, style=discord.ButtonStyle.green)
-    async def att_req(self, interaction: discord.Interaction, Button: discord.ui.Button):
+    @button(label="yes", row=0, style=ButtonStyle.green)
+    async def att_req(self, interaction: Interaction, Button: Button):
         global magic_item
         magic_item["att_req"] = "yes"
         await interaction.response.send_message("`This item does require a specific class to use it`")
-    @discord.ui.button(label="no", row=0, style=discord.ButtonStyle.red)
-    async def att_not_req(self, interaction: discord.Interaction, Button: discord.ui.Button):
+    @button(label="no", row=0, style=ButtonStyle.red)
+    async def att_not_req(self, interaction: Interaction, Button: Button):
         global magic_item
         magic_item["att_req"] = "no"
         await interaction.response.send_message("`This item does not require a specific class to use it`")
 
 
-class MagicItemRarity(discord.ui.View):
+class MagicItemRarity(View):
 
-    @discord.ui.select(placeholder = "Choose an item rarity", min_values=1, max_values=1,
-        options = [discord.SelectOption(label="Common"), discord.SelectOption(label="Uncommon"),
-            discord.SelectOption(label="Rare"), discord.SelectOption(label="Very Rare"),
-            discord.SelectOption(label="Legendary"), discord.SelectOption(label="Artifact"),
-            discord.SelectOption(label="Varies"), discord.SelectOption(label="Unknown Rarity")])
+    @select(placeholder = "Choose an item rarity", min_values=1, max_values=1,
+        options = [SelectOption(label="Common"), SelectOption(label="Uncommon"),
+            SelectOption(label="Rare"), SelectOption(label="Very Rare"),
+            SelectOption(label="Legendary"), SelectOption(label="Artifact"),
+            SelectOption(label="Varies"), SelectOption(label="Unknown Rarity")])
 
     async def select_callback(self, interaction, select):
         """Saves selected item rarity into the magical item dict"""
@@ -52,14 +51,14 @@ class MagicItemRarity(discord.ui.View):
         await interaction.response.send_message(f"`Wow it is {indefinite_article} {item_rarity.lower()} item!`")
 
 
-class MagicItemType(discord.ui.View):
+class MagicItemType(View):
 
-    @discord.ui.select(placeholder = "Choose an item type", min_values=1, max_values=1,
-        options = [discord.SelectOption(label="Armour"), discord.SelectOption(label="Potion"),
-            discord.SelectOption(label="Ring"), discord.SelectOption(label="Rod"),
-            discord.SelectOption(label="Scroll"), discord.SelectOption(label="Staff"),
-            discord.SelectOption(label="Wand"), discord.SelectOption(label="Weapon"),
-            discord.SelectOption(label="Wondrous Item")])
+    @select(placeholder = "Choose an item type", min_values=1, max_values=1,
+        options = [SelectOption(label="Armour"), SelectOption(label="Potion"),
+            SelectOption(label="Ring"), SelectOption(label="Rod"),
+            SelectOption(label="Scroll"), SelectOption(label="Staff"),
+            SelectOption(label="Wand"), SelectOption(label="Weapon"),
+            SelectOption(label="Wondrous Item")])
 
     async def select_callback(self, interaction, select):
         """Saves selected item type into the magical item dict"""
@@ -75,6 +74,7 @@ def is_dnd_event_activated():
     async def predicate(*args):
         from bot import servers_obj
         """Returns True if the DnD event is activated on a server"""
+        print(9, servers_obj.get_server().dnd_event)
         return servers_obj.get_server().dnd_event
     return commands.check(predicate)
 
@@ -99,11 +99,11 @@ class DNDCog(commands.Cog):
         magic_item["name"] = item_name
         await ctx.send(content=f"`You are adding an item:` **{item_name}**")
         await ctx.send(content="Choose an item rarity:", view=MagicItemRarity())
-        await asyncio.sleep(3)
+        await sleep(3)
         await ctx.send(content="Choose an item type:", view=MagicItemType())
-        await asyncio.sleep(3)
+        await sleep(3)
         await ctx.send(content="Can only a specific class use this item?", view=MagicItemAttReq())
-        await asyncio.sleep(10)
+        await sleep(10)
 
         if magic_item.get("att_req") == "yes":
             await ctx.send("Please enter the name of the class that can use this item:")
@@ -116,7 +116,7 @@ class DNDCog(commands.Cog):
 
                 magic_item["class"] = item_class.content
                 await ctx.send(f"`The selected class that can use this item is {magic_item['class']}`")
-            except asyncio.TimeoutError: 
+            except TimeoutError: 
                 await ctx.send(f"**{ctx.author}**, you didn't send the class for this item in time. `Try again!`")
                 clean_magic_item()
                 return
@@ -127,14 +127,14 @@ class DNDCog(commands.Cog):
             magic_item["description"] = description.content
             await ctx.send(f"`The item's description is: ` ```{magic_item['description']}```")
 
-        except asyncio.TimeoutError: 
+        except TimeoutError: 
             await ctx.send(f"**{ctx.author}**, you didn't send the description for this item in time. `Try again!`")
             clean_magic_item()
             return
         await ctx.send(add_magic_item(ctx.author))
 
 
-    @commands.command(name="j")
+    @commands.command(name="add_user")
     @is_dnd_event_activated()
     async def join_dnd(self, ctx) -> None:
         """Verifies if a player is already in the game
@@ -149,8 +149,8 @@ class DNDCog(commands.Cog):
                 cur.execute("""INSERT INTO players(username) VALUES (%s)""", [user])
                 conn.commit()
             conn.close()
-            response = discord.Embed(title=f"{user} was successfully added into the game!",
-                            description=f"* Dungeons & Dragons", color=discord.Colour(value=0x00FF00))
+            response = Embed(title=f"{user} was successfully added into the game!",
+                            description=f"* Dungeons & Dragons", color=Colour(value=0x00FF00))
             response.set_image(url=ctx.author.avatar)
             await ctx.send("New user added:", embed=response)
         else:
@@ -177,7 +177,10 @@ class DNDCog(commands.Cog):
     async def add_story(self, ctx, *args) -> None:
         """Logs in the added story"""
         story = " ".join(args)
-        await ctx.send(log_story(story)) #! add guild
+        print(ctx.channel.guild.id)
+        # guild_id = ctx.channel.guild.id
+        await ctx.send("yes")
+        # await ctx.send(log_story(story)) #! add guild
 
 
     @commands.command(name="story_date")
@@ -186,9 +189,10 @@ class DNDCog(commands.Cog):
         """Shows the logged story from a provided date"""
         if not verify_date(date):
             await ctx.send("```The date entered is in the wrong format. Check -> //h```")
+            return
         try:
             await ctx.send(part_story(date))
-        except: #! add error type
+        except KeyError:
             await ctx.send("```The date entered has no data. Try //storyline```") #! add guild
 
 

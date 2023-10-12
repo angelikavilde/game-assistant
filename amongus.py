@@ -8,8 +8,8 @@ from discord.ext.commands.context import Context
 def is_amongus_event_activated():
     """Predicate function to verify if command can be ran"""
     async def predicate(*args):
-        from bot import servers_obj
         """Returns True if the AmongUs event is activated on a server"""
+        from bot import servers_obj
         return servers_obj.get_server().amongus_event
     return check(predicate)
 
@@ -19,7 +19,7 @@ class AmongUsCog(Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @command(name="d")
+    @command(name="dead")
     @is_amongus_event_activated()
     async def player_died(self, ctx: Context) -> None:
         """Changes the role of a player to a dead role if not already"""
@@ -32,7 +32,7 @@ class AmongUsCog(Cog):
             await ctx.send(f"`{str(ctx.author)} is already laying in the grave!`")
 
 
-    @command(name="n")
+    @command(name="new")
     @is_amongus_event_activated()
     async def reset_game(self, ctx: Context) -> None:
         """Restarts the among-us event"""
@@ -55,6 +55,7 @@ async def member_role_changed(ctx: Context, user: discord.member.Member, add: bo
     role = discord.utils.get(ctx.guild.roles, name="Dead Crewmate")
     if not role:
         await ctx.send("```Dead Crewmate role does not exist on this channel!```")
+        return
     else:
         if add:
             await user.add_roles(role)
