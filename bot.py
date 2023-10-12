@@ -5,6 +5,7 @@ from random import choice
 
 import discord
 from discord.ext import commands
+from discord.ext.commands.context import Context
 import requests
 from dotenv import load_dotenv
 from discord.message import Message
@@ -57,6 +58,21 @@ class BotEvents():
     def get_all_event_statuses(self) -> bool:
         """Returns bool whether any event is running"""
         return any((self.codenames_event, self.amongus_event, self.dnd_event))
+
+    def get_active_event_name(self) -> str:
+        """Returns the name of the active event"""
+        if self.codenames_event:
+            return "CodeNames"
+        if self.amongus_event:
+            return "AmongUs"
+        if self.dnd_event:
+            return "Dungeons & Dragons"
+
+    def disable_events(self) -> None:
+        """Disables all possible events"""
+        self.codenames_event = False
+        self.amongus_event = False
+        self.dnd_event = False
 
 
 bot_message: discord.message.Message = None
@@ -160,6 +176,15 @@ def run_discord_bot() -> None:
     async def help(interaction: discord.Interaction) -> None:
         """Sends bot's help documentation"""
         await interaction.response.send_message(help_documentation("bot"))
+
+    @client.command(name="q")
+    async def quit_event(ctx: Context):
+        if not servers_obj.get_server().get_all_event_statuses():
+            await ctx.send("```There is currently no event running. Activate one -> /play```")
+        else:
+            event = servers_obj.get_server().get_active_event_name()
+            servers_obj.get_server().disable_events()
+            await ctx.send(f"`{event} event was finished!`")
 
 
     @client.event
