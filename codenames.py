@@ -16,6 +16,7 @@ def is_codenames_event_activated():
 
 
 class CodeNamesCog(Cog):
+    """Class for all CodeNames event commands"""
 
     def __init__(self, bot):
         self.bot = bot

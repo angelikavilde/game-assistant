@@ -23,21 +23,26 @@ def who_won_rps(bot_chose: str, user_chose: str) -> str:
 
 
 class RockPaperScissors(View):
+    """Class for rock paper scissors buttons"""
+
     def __init__(self, bot_choice: str):
         super().__init__(timeout=10)
         self.bot_choice = bot_choice
 
     @button(label="Rock", row=0, style=ButtonStyle.red)
     async def rock(self, interaction: Interaction, Button: Button) -> None:
+        """User clicked rock button"""
         if not await check_rps_played(interaction):
             await interaction.response.send_message(who_won_rps(self.bot_choice, "rock"))
 
     @button(label="Paper", row=0, style=ButtonStyle.red)
     async def paper(self, interaction: Interaction, Button: Button) -> None:
+        """User clicked paper button"""
         if not await check_rps_played(interaction):
             await interaction.response.send_message(who_won_rps(self.bot_choice, "paper"))
 
     @button(label="Scissors", row=0, style=ButtonStyle.red)
     async def scissors(self, interaction: Interaction, Button: Button) -> None:
+        """User clicked scissors button"""
         if not await check_rps_played(interaction):
             await interaction.response.send_message(who_won_rps(self.bot_choice, "scissors"))

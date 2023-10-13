@@ -5,7 +5,7 @@ from datetime import datetime
 from os import environ
 
 from discord import ButtonStyle, Colour, Embed, Interaction, SelectOption
-from discord.ext import commands
+from discord.ext.commands import check, command, Cog
 from discord.ui import Button, View, button, select
 from dotenv import load_dotenv
 from pandas import DataFrame
@@ -19,22 +19,29 @@ magic_item: dict = dict()
 #! LOG STORY GUILD SPECIFIC
 
 class MagicItemAttReq(View):
+    """Class for choosing if only a specific class can use an item"""
     def __init__(self):
         super().__init__(timeout=15)
 
     @button(label="yes", row=0, style=ButtonStyle.green)
     async def att_req(self, interaction: Interaction, Button: Button):
+        """Handles if a user clicked a button choosing that only a specific class
+        can use an acquired item"""
         global magic_item
         magic_item["att_req"] = "yes"
         await interaction.response.send_message("`This item does require a specific class to use it`")
+
     @button(label="no", row=0, style=ButtonStyle.red)
     async def att_not_req(self, interaction: Interaction, Button: Button):
+        """Handles if a user clicked a button choosing that any class
+        can use an acquired item"""
         global magic_item
         magic_item["att_req"] = "no"
         await interaction.response.send_message("`This item does not require a specific class to use it`")
 
 
 class MagicItemRarity(View):
+    """Select Menu for choosing an item rarity type"""
 
     @select(placeholder = "Choose an item rarity", min_values=1, max_values=1,
         options = [SelectOption(label="Common"), SelectOption(label="Uncommon"),
@@ -47,11 +54,12 @@ class MagicItemRarity(View):
         global magic_item
         item_rarity = select.values[0]
         magic_item["item_rarity"] = item_rarity
-        indefinite_article = 'an' if item_rarity[0] == "U" or item_rarity[0] == "A" else "a"
+        indefinite_article = "an" if item_rarity[0] == "U" or item_rarity[0] == "A" else "a"
         await interaction.response.send_message(f"`Wow it is {indefinite_article} {item_rarity.lower()} item!`")
 
 
 class MagicItemType(View):
+    """Select Menu for choosing an item type"""
 
     @select(placeholder = "Choose an item type", min_values=1, max_values=1,
         options = [SelectOption(label="Armour"), SelectOption(label="Potion"),
@@ -75,15 +83,16 @@ def is_dnd_event_activated():
         """Returns True if the DnD event is activated on a server"""
         from bot import servers_obj
         return servers_obj.get_server().dnd_event
-    return commands.check(predicate)
+    return check(predicate)
 
 
-class DNDCog(commands.Cog):
+class DNDCog(Cog):
+    """Class that handles all commands for the DnD event"""
 
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="add_magic")
+    @command(name="add_magic")
     @is_dnd_event_activated()
     async def get_magical_item_values(self, ctx, *args) -> None:
         """Retrieves values for a magical item to be added"""
@@ -131,9 +140,9 @@ class DNDCog(commands.Cog):
             clean_magic_item()
             return
         await ctx.send(add_magic_item(ctx.author))
+        clean_magic_item()
 
-
-    @commands.command(name="add_user")
+    @command(name="add_user")
     @is_dnd_event_activated()
     async def join_dnd(self, ctx) -> None:
         """Verifies if a player is already in the game
@@ -156,8 +165,7 @@ class DNDCog(commands.Cog):
             conn.close()
             await ctx.send(f"`{user} is already in the game!`")
 
-
-    @commands.command(name="magic")
+    @command(name="magic")
     @is_dnd_event_activated()
     async def all_magic_items(self, ctx) -> None:
         """Shows user all of their magical items"""
@@ -170,8 +178,7 @@ class DNDCog(commands.Cog):
             await ctx.send(format_magic_items_displayed(conn, magic_items_held))
         conn.close()
 
-
-    @commands.command(name="story")
+    @command(name="story")
     @is_dnd_event_activated()
     async def add_story(self, ctx, *args) -> None:
         """Logs in the added story"""
@@ -179,8 +186,7 @@ class DNDCog(commands.Cog):
         guild_id = ctx.channel.guild.id
         await ctx.send(log_story(story, guild_id))
 
-
-    @commands.command(name="story_date")
+    @command(name="story_date")
     @is_dnd_event_activated()
     async def show_story_with_date(self, ctx, date) -> None:
         """Shows the logged story from a provided date"""
@@ -192,15 +198,13 @@ class DNDCog(commands.Cog):
         except KeyError:
             await ctx.send("```The date entered has no data. Try //storyline```") #! add guild
 
-
-    @commands.command(name="storyline")
+    @command(name="storyline")
     @is_dnd_event_activated()
     async def show_story(self, ctx) -> None:
         """Shows all the logged story"""
         await ctx.send(full_story()) #! add guild
 
-
-    @commands.command(name="use_magic")
+    @command(name="use_magic")
     @is_dnd_event_activated()
     async def use_magical_item(self, ctx, *args) -> None:
         """Uses selected magical item"""

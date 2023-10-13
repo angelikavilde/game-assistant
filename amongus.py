@@ -1,8 +1,9 @@
 """Among-us event bot functionalities"""
 
-import discord
 from discord.ext.commands import Cog, check, command
 from discord.ext.commands.context import Context
+from discord.member import Member
+from discord import utils
 
 
 def is_amongus_event_activated():
@@ -15,6 +16,7 @@ def is_amongus_event_activated():
 
 
 class AmongUsCog(Cog):
+    """Commands for AmongUs event"""
 
     def __init__(self, bot):
         self.bot = bot
@@ -49,15 +51,13 @@ async def clean_dead_roles(ctx: Context) -> None:
         await member_role_changed(ctx, member, False)
 
 
-async def member_role_changed(ctx: Context, user: discord.member.Member, add: bool) -> None:
+async def member_role_changed(ctx: Context, user: Member, add: bool) -> None:
     """Gives a user a Dead Crewmate role or removes it"""
-
-    role = discord.utils.get(ctx.guild.roles, name="Dead Crewmate")
+    role = utils.get(ctx.guild.roles, name="Dead Crewmate")
     if not role:
         await ctx.send("```Dead Crewmate role does not exist on this channel!```")
         return
+    if add:
+        await user.add_roles(role)
     else:
-        if add:
-            await user.add_roles(role)
-        else:
-            await user.remove_roles(role)
+        await user.remove_roles(role)

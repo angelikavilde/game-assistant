@@ -92,7 +92,7 @@ async def check_if_any_events_are_running(ctx : Context) -> bool:
     return True
 
 
-async def check_events_status(interaction: Interaction, servers: 'Servers') -> bool:
+async def can_new_event_be_started(interaction: Interaction, servers: 'Servers') -> bool:
     """Verifies the events' running statuses to make sure new event can be started"""
     if servers.get_server().get_all_event_statuses():
         await interaction.response.send_message("`There is already an event running. //h for event info or //q to finish!`")
@@ -104,18 +104,21 @@ async def check_events_status(interaction: Interaction, servers: 'Servers') -> b
 
 
 class StartEvent(View):
+    """Class for buttons to choose an event to start"""
     def __init__(self):
         super().__init__(timeout=30)
 
     @button(label="CodeNames", row=0, style=ButtonStyle.gray)
     async def codenames(self, interaction: Interaction, Button: Button) -> None:
-        if not await check_events_status(interaction, servers_obj):
+        """Starts a CodeNames event"""
+        if not await can_new_event_be_started(interaction, servers_obj):
             servers_obj.get_server().codenames_event = True
             link = "https://cdn.discordapp.com/attachments/1130455303087984704/1144308331922600026/Screenshot_2023-08-24_at_17.32.32.png"
             await embed_for_events(interaction, "CodeNames", link)
 
     @button(label="RockPaperScissors", row=0, style=ButtonStyle.gray)
     async def rps(self, interaction: Interaction, Button: Button) -> None:
+        """Starts a rock paper scissors game"""
         choices = ["scissors", "rock", "paper"]
         bot_chose = choice(choices)
         await interaction.response.send_message(content="I've made my choice. Choose yours!",
@@ -123,14 +126,16 @@ class StartEvent(View):
 
     @button(label="AmongUs", row=0, style=ButtonStyle.gray)
     async def among_us(self, interaction: Interaction, Button: Button) -> None:
-        if not await check_events_status(interaction, servers_obj):
+        """Starts a AmongUs event"""
+        if not await can_new_event_be_started(interaction, servers_obj):
             servers_obj.get_server().amongus_event = True
             link = "https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372"
             await embed_for_events(interaction, "Among Us", link)
 
     @button(label="DnD", row=0, style=ButtonStyle.gray)
     async def dnd(self, interaction: Interaction, Button: Button) -> None:
-        if not await check_events_status(interaction, servers_obj):
+        """Starts a DnD event"""
+        if not await can_new_event_be_started(interaction, servers_obj):
             servers_obj.get_server().dnd_event = True
             link = "https://db4sgowjqfwig.cloudfront.net/campaigns/112103/assets/550235/Bugbear.png?1453822798"
             await embed_for_events(interaction, "Dungeons & Dragons", link)
@@ -193,6 +198,7 @@ def run_discord_bot() -> None:
     # Global event commands
     @client.command(name="q")
     async def quit_event(ctx: Context):
+        """Finishes any currently running event"""
         if await check_if_any_events_are_running(ctx):
             event = servers_obj.get_server().get_active_event_name()
             if event == "AmongUs":
@@ -202,6 +208,7 @@ def run_discord_bot() -> None:
     
     @client.command(name="h")
     async def help_event(ctx: Context):
+        """Sends a help documentation for the currently running event"""
         if await check_if_any_events_are_running(ctx):
             event = servers_obj.get_server().get_active_event_name()
             await ctx.send(help_documentation(event))
@@ -209,6 +216,7 @@ def run_discord_bot() -> None:
 
     @client.event
     async def on_ready() -> None:
+        """Syncs in additional bot's commands"""
         print(f"{client.user} is now running!")
         await client.tree.sync()
         dnd_cog = DNDCog(client)
@@ -222,7 +230,12 @@ def run_discord_bot() -> None:
 
     @client.event
     async def on_message(message: Message) -> None:
+        """Every time a new message comes in,
+        check if it is a command and save
+        last bot's message"""
+
         await client.process_commands(message)
+
         global bot_message, guild_id
         if not message.content:
             return
