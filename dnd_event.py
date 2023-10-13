@@ -16,7 +16,6 @@ from psycopg2.extras import RealDictCursor
 
 magic_item: dict = dict()
 
-#! LOG STORY GUILD SPECIFIC
 
 class MagicItemAttReq(View):
     """Class for choosing if only a specific class can use an item"""
@@ -194,15 +193,17 @@ class DNDCog(Cog):
             await ctx.send("```The date entered is in the wrong format. Check -> //h```")
             return
         try:
-            await ctx.send(part_story(date))
+            guild_id = ctx.channel.guild.id
+            await ctx.send(part_story(date, guild_id))
         except KeyError:
-            await ctx.send("```The date entered has no data. Try //storyline```") #! add guild
+            await ctx.send("```The date entered has no data. Try //storyline```")
 
     @command(name="storyline")
     @is_dnd_event_activated()
     async def show_story(self, ctx) -> None:
         """Shows all the logged story"""
-        await ctx.send(full_story()) #! add guild
+        guild_id = ctx.channel.guild.id
+        await ctx.send(full_story(guild_id))
 
     @command(name="use_magic")
     @is_dnd_event_activated()
@@ -241,13 +242,13 @@ def get_all_magic_items(conn: connection, user_id) -> dict:
         return cur.fetchall()
 
 
-def use_magic_item(user: str, msg: str) -> str:
+def use_magic_item(user: str, item: str) -> str:
     """Deletes a magic item from user's magic items if exists"""
 
     conn = get_db_conn()
 
     user_id = find_user(conn, user)
-    item_name = msg[12:].strip()
+    item_name = item.strip()
 
     all_users_magic_items = get_all_magic_items(conn, user_id)
     all_users_magic_items = [item["item_name"] for item in all_users_magic_items]
@@ -321,7 +322,7 @@ def add_magic_item(user: str) -> str:
         attunement_req, class, description) VALUES (%s, %s, %s, %s, %s, %s, %s)""", item_values)
         conn.commit()
     conn.close()
-    return f"`{magic_item['name']} item is successfully added to your magic items!`"
+    return f"`{magic_item['name']} item is successfully added to your magical items!`"
 
 
 def get_item_rarity_type(conn: connection, rarity_name: str) -> int:
@@ -347,27 +348,33 @@ def find_user(conn: connection, user: str) -> int | None:
         return id["user_id"] if id is not None else id
 
 
-def full_story() -> str:
+def full_story(guild: int) -> str:
     """Returns full previously logged story"""
 
     conn = get_db_conn()
 
     with conn.cursor() as cur:
-        cur.execute("SELECT * FROM log_story")
-        data = DataFrame(cur.fetchall())[["date_time","story"]]
+        cur.execute("SELECT * FROM log_story WHERE guild_id = %s", [guild])
+        data = DataFrame(cur.fetchall())
     conn.close()
-    return story_table_displayed(data)
+    if not data.empty:
+        data = data[["date_time","story"]]
+        return story_table_displayed(data)
+    return "```No data found```"
 
 
-def part_story(date: str) -> str:
+def part_story(date: str, guild: int) -> str:
     """Returns all the story logged from a provided date"""
 
     conn = get_db_conn()
 
+    search_values = date.split("/")
+    search_values.append(guild)
+
     with conn.cursor() as cur:
         cur.execute("""SELECT * FROM log_story WHERE EXTRACT(day
         FROM date_time) = %s AND EXTRACT(month
-            FROM date_time) = %s""", date.split("/"))
+            FROM date_time) = %s AND guild_id = %s""", search_values)
         data = cur.fetchall()
     conn.close()
     return story_table_displayed(DataFrame(data)[["date_time", "story"]])

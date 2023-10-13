@@ -55,7 +55,7 @@ class CodeNamesCog(Cog):
         """Displays random teams"""
         from bot import servers_obj
         if len(servers_obj.get_server().users_playing) < 4:
-            return "`This game is designed for minimum of 4 people. Preferably 6 or more. Add more players!`"
+            await ctx.send("`This game is designed for minimum of 4 people. Preferably 6 or more. Add more players!`")
         team1 = servers_obj.get_server().users_playing.copy()
         team2 = []
         for _ in range(int(len(servers_obj.get_server().users_playing)/2)):
@@ -64,7 +64,7 @@ class CodeNamesCog(Cog):
             team_2_formatted = ", ".join(team2)
         teams = f"""```Team 1: {team_1_formatted}; Captain: {choice(team1)}
 Team 2: {team_2_formatted}; Captain: {choice(team2)}```"""
-        return teams
+        await ctx.send(teams)
 
     @command(name="show")
     @is_codenames_event_activated()
@@ -72,7 +72,7 @@ Team 2: {team_2_formatted}; Captain: {choice(team2)}```"""
         """Displays current players to the chat"""
         from bot import servers_obj
         users_playing = ", ".join(servers_obj.get_server().users_playing)
-        return f"`Currently playing are: {users_playing}`"
+        await ctx.send(f"`Currently playing are: {users_playing}`")
 
 
 def remove_a_player(player: str) -> str:

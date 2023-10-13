@@ -39,10 +39,10 @@ AmongUs event commands:
         case "bot":
             return """
 These are _some_ of the commands I respond to:
-* /repeat - repeats a message after you and deletes your sent message
-* /joke - sends a random programmer joke
-* /aff - sends a random affirmation
-* /kill - deletes last bots message and the command will be deleted off the screen too (!kill)
-* /play - shows events that could be activated
+* /repeat - Repeats a message after you and deletes your sent message
+* /joke - Sends a random programmer joke
+* /aff - Sends a random affirmation
+* /play - Shows events that could be activated
+* /rps - Play rock-paper-scissors with the bot
 **Each event when activated has its own commands //h for help about the event**
 """

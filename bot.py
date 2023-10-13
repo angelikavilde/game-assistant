@@ -79,7 +79,7 @@ class BotEvents():
         self.users_playing = []
 
 
-bot_message: dict = dict()
+bot_message: Message = None
 guild_id: int = 404
 servers_obj: 'Servers' = Servers.create_instance()
 
@@ -92,7 +92,7 @@ async def check_if_any_events_are_running(ctx : Context) -> bool:
     return True
 
 
-async def can_new_event_be_started(interaction: Interaction, servers: 'Servers') -> bool:
+async def can_new_even_start(interaction: Interaction, servers: 'Servers') -> bool:
     """Verifies the events' running statuses to make sure new event can be started"""
     if servers.get_server().get_all_event_statuses():
         await interaction.response.send_message("`There is already an event running. //h for event info or //q to finish!`")
@@ -111,7 +111,7 @@ class StartEvent(View):
     @button(label="CodeNames", row=0, style=ButtonStyle.gray)
     async def codenames(self, interaction: Interaction, Button: Button) -> None:
         """Starts a CodeNames event"""
-        if not await can_new_event_be_started(interaction, servers_obj):
+        if not await can_new_even_start(interaction, servers_obj):
             servers_obj.get_server().codenames_event = True
             link = "https://cdn.discordapp.com/attachments/1130455303087984704/1144308331922600026/Screenshot_2023-08-24_at_17.32.32.png"
             await embed_for_events(interaction, "CodeNames", link)
@@ -127,7 +127,7 @@ class StartEvent(View):
     @button(label="AmongUs", row=0, style=ButtonStyle.gray)
     async def among_us(self, interaction: Interaction, Button: Button) -> None:
         """Starts a AmongUs event"""
-        if not await can_new_event_be_started(interaction, servers_obj):
+        if not await can_new_even_start(interaction, servers_obj):
             servers_obj.get_server().amongus_event = True
             link = "https://media.discordapp.net/attachments/1115715187052392521/1121920595530108928/image.png?width=1038&height=372"
             await embed_for_events(interaction, "Among Us", link)
@@ -135,7 +135,7 @@ class StartEvent(View):
     @button(label="DnD", row=0, style=ButtonStyle.gray)
     async def dnd(self, interaction: Interaction, Button: Button) -> None:
         """Starts a DnD event"""
-        if not await can_new_event_be_started(interaction, servers_obj):
+        if not await can_new_even_start(interaction, servers_obj):
             servers_obj.get_server().dnd_event = True
             link = "https://db4sgowjqfwig.cloudfront.net/campaigns/112103/assets/550235/Bugbear.png?1453822798"
             await embed_for_events(interaction, "Dungeons & Dragons", link)
@@ -182,7 +182,7 @@ def run_discord_bot() -> None:
         bot_chose = choice(choices)
         await interaction.response.send_message(content="I've made my choice. Choose yours!",
                                         view=RockPaperScissors(bot_chose))
-
+    
     @client.tree.command(name="help")
     async def help(interaction: Interaction) -> None:
         """Sends bot's help documentation"""
@@ -231,12 +231,13 @@ def run_discord_bot() -> None:
         await client.process_commands(message)
 
         global bot_message, guild_id
+
         if not message.content:
             return
         guild_id = message.guild.id
 
         if message.author == client.user:
-            bot_message[guild_id] = message
+            bot_message = message
             return
 
         user = str(message.author.global_name)
