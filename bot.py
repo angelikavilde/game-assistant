@@ -79,7 +79,7 @@ class BotEvents():
         self.users_playing = []
 
 
-bot_message: Message = None
+bot_message: dict = dict()
 guild_id: int = 404
 servers_obj: 'Servers' = Servers.create_instance()
 
@@ -183,12 +183,6 @@ def run_discord_bot() -> None:
         await interaction.response.send_message(content="I've made my choice. Choose yours!",
                                         view=RockPaperScissors(bot_chose))
 
-    @client.tree.command(name="kill")
-    async def kill(interaction: Interaction) -> None:
-        """Kills last bot's message"""
-        if bot_message is not None:
-            await bot_message.delete()
-    
     @client.tree.command(name="help")
     async def help(interaction: Interaction) -> None:
         """Sends bot's help documentation"""
@@ -242,7 +236,7 @@ def run_discord_bot() -> None:
         guild_id = message.guild.id
 
         if message.author == client.user:
-            bot_message = message
+            bot_message[guild_id] = message
             return
 
         user = str(message.author.global_name)
