@@ -14,27 +14,34 @@ The script for the bot uses various UI components from the discord.py from selec
 ## Interactive Features
 
 When the bot is added to the server, it will pop up with autocomplete commands with ones shown on the screen:
-![Commands that show up when bot is added to the server in autocomplete commands](snippets/Screenshot%202023-10-13%20at%2015.31.20.png)
+
+<img src="snippets/Screenshot%202023-10-13%20at%2015.31.20.png" width="700" height="280" alt="Commands that show up when bot is added to the server in autocomplete commands">
 
 
 When the user wants to start a game with /play command, it will show the following buttons which will activate a server wide event that the rest of the users can participate in:
-![Buttons shown when /play is ran (Codenames, Rock-paper-scissors, AmongUs, DnD)](snippets/Screenshot%202023-10-13%20at%2015.31.38.jpg)
+
+<img src="snippets/Screenshot%202023-10-13%20at%2015.31.38.jpg" width="700" height="150" alt="Buttons shown when /play is ran (Codenames, Rock-paper-scissors, AmongUs, DnD)">
 
 After activating an event, an embed will be shown on the same message channel with the image of the event and a recommendation of checking out event specific commands with //h:
-![Embed that shows up after activating Codenames event which shows an image with the game name and a recommendation of running //h command to see commands for the event. The screenshot then shows an example of //h command being ran which shows event specific commands](snippets/Screenshot%202023-10-13%20at%2015.31.59.jpg)
+
+<img src="snippets/Screenshot%202023-10-13%20at%2015.31.59.jpg" width="700" height="650" alt="Embed that shows up after activating Codenames event which shows an image with the game name and a recommendation of running //h command to see commands for the event. The screenshot then shows an example of //h command being ran which shows event specific commands">
 
 Each event has event specific commands which cannot be used when the event is not active. However, if an event is active, another event cannot be started before stopping the current event. This is the message it shows on screen if an event is active and a user tries to start a new event:
-![Screenshot showing an error message on screen when attempting to activate an event when another one is currently running on a server - telling the user to finish the event first](snippets/Screenshot%202023-10-13%20at%2015.33.10.jpg)
+
+<img src="snippets/Screenshot%202023-10-13%20at%2015.33.10.jpg" width="700" height="220" alt="Screenshot showing an error message on screen when attempting to activate an event when another one is currently running on a server - telling the user to finish the event first">
 
 One of the possible events includes a DnD event which is the only event that has an ability to save user's data in the database for future reference. Some of the commands that allow the user to save data include //story, which allows the user to save the game's events to be viewed later:
-![//story command in use with DnD event activated that allows the user to log in their story](snippets/Screenshot%202023-08-09%20at%2023.08.52.jpg)
+
+<img src="snippets/Screenshot%202023-08-09%20at%2023.08.52.jpg" width="700" height="120" alt="//story command in use with DnD event activated that allows the user to log in their story">
 
 Another command that allows the user to save the data in the database for the DnD event is the //add_magic command which allows to save an acquired item's information to be later viewed or used. When command is activated, it will show multiple options for item's values to be entered before saving it.
-![Screenshot example of a user adding a magical item to the Dnd items on cloud. It shows 2 drop down menus of item type and rarity collected with a button choice of choosing whether this item can only be used by a specific class of a character only](snippets/Screenshot%202023-10-13%20at%2015.34.59.jpg)
-![Continuing the previous magic item addition - the bot then asks the user for the item description and shows it on screen before saying that the item was successfully added to the user's magical items](snippets/Screenshot%202023-10-13%20at%2015.35.09.jpg)
+
+<img src="snippets/Screenshot%202023-10-13%20at%2015.34.59.jpg" width="700" height="550" alt="Screenshot example of a user adding a magical item to the Dnd items on cloud. It shows 2 drop down menus of item type and rarity collected with a button choice of choosing whether this item can only be used by a specific class of a character only">
+<img src="snippets/Screenshot%202023-10-13%20at%2015.35.09.jpg" width="700" height="290" alt="Continuing the previous magic item addition - the bot then asks the user for the item description and shows it on screen before saying that the item was successfully added to the user's magical items">
 
 This is the command that can show the items previously saved (and not used) during the event:
-![Screenshot of a user trying //magic command during the Dnd event which shows the user's magical items' information](snippets/Screenshot%202023-10-13%20at%2015.36.31.jpg)
+
+<img src="snippets/Screenshot%202023-10-13%20at%2015.36.31.jpg" width="700" height="210" alt="Screenshot of a user trying //magic command during the Dnd event which shows the user's magical items' information">
 
 ## Set-up
 
