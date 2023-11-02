@@ -212,7 +212,6 @@ def run_discord_bot() -> None:
     async def on_ready() -> None:
         """Syncs in additional bot's commands"""
         print(f"{client.user} is now running!")
-        await client.tree.sync()
         dnd_cog = DNDCog(client)
         amongus_cog = AmongUsCog(client)
         codenames_cog = CodeNamesCog(client)
@@ -228,7 +227,10 @@ def run_discord_bot() -> None:
         check if it is a command and save
         last bot's message"""
 
-        await client.process_commands(message)
+        await client.tree.sync()
+
+        if str(message.content).startswith("/") and str(message.content)[:8]!="/repeat ":
+            await client.process_commands(message)
 
         global bot_message, guild_id
 
@@ -244,7 +246,7 @@ def run_discord_bot() -> None:
         msg = str(message.content).lower()
         chnl = str(message.channel)
 
-        print(f"{user} said: '{msg}' ({chnl}), guild: {guild_id}")
+        # print(f"{user} said: '{msg}' ({chnl}), guild: {guild_id}")
 
         await easter_egg_func(message, msg)
 
