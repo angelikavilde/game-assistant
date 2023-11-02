@@ -212,6 +212,7 @@ def run_discord_bot() -> None:
     async def on_ready() -> None:
         """Syncs in additional bot's commands"""
         print(f"{client.user} is now running!")
+        await client.tree.sync()
         dnd_cog = DNDCog(client)
         amongus_cog = AmongUsCog(client)
         codenames_cog = CodeNamesCog(client)
@@ -226,8 +227,6 @@ def run_discord_bot() -> None:
         """Every time a new message comes in,
         check if it is a command and save
         last bot's message"""
-
-        await client.tree.sync()
 
         if str(message.content).startswith("/") and str(message.content)[:8]!="/repeat ":
             await client.process_commands(message)
