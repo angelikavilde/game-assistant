@@ -1,15 +1,17 @@
 """File that includes the bot's commands and event data"""
 
+from asyncio import sleep
 from os import environ
 from random import choice
 
-from discord import ButtonStyle, Colour, Embed, Interaction, Intents
+from discord import ButtonStyle, Colour, Embed, Interaction, Intents, ClientException
 from discord.ext import commands
 from discord.ext.commands.context import Context
 from discord.message import Message
 from discord.ui import Button, View, button
+from discord.utils import get
 from dotenv import load_dotenv
-from requests import get
+import requests
 
 from amongus import AmongUsCog, clean_dead_roles
 from codenames import CodeNamesCog
@@ -148,6 +150,7 @@ def run_discord_bot() -> None:
     load_dotenv()
     TOKEN = environ["TOKEN"]
     intents = Intents.default()
+    intents.voice_states = True
     intents.message_content = True
     intents.guilds = True
     client = commands.Bot(intents=intents, command_prefix="//")
@@ -157,7 +160,7 @@ def run_discord_bot() -> None:
     async def affirm(interaction: Interaction) -> None:
         """Returns an affirmation text from an API"""
 
-        request = get("https://www.affirmations.dev/")
+        request = requests.get("https://www.affirmations.dev/")
         affirmation = request.json()
         await interaction.response.send_message(affirmation["affirmation"])
 
@@ -165,7 +168,7 @@ def run_discord_bot() -> None:
     async def joke(interaction: Interaction) -> None:
         """Returns programmer joke from an API"""
 
-        request = get("https://official-joke-api.appspot.com/jokes/programming/random")
+        request = requests.get("https://official-joke-api.appspot.com/jokes/programming/random")
         joke = request.json()
         await interaction.response.send_message(joke[0]["setup"] + "\n" + joke[0]["punchline"])
 
@@ -206,6 +209,21 @@ def run_discord_bot() -> None:
         if await check_if_any_events_are_running(ctx):
             event = servers_obj.get_server().get_active_event_name()
             await ctx.send(help_documentation(event))
+
+    @client.command(name="lonely")
+    async def lonely(ctx: Context, *args) -> None:
+        """Joins your desired channel for 60s if you're lonely"""
+        channel_name = (" ".join(args)).strip()
+        target_channel = get(ctx.guild.voice_channels, name=channel_name)
+        if target_channel:
+            try:
+                target_channel = await target_channel.connect(self_mute=True,self_deaf=True)
+                await sleep(60)
+                await target_channel.disconnect()
+            except ClientException:
+                await ctx.send("`I'm afraid I am already in a voice channel!`")
+        else:
+            await ctx.send("`I'm afraid I did not find the channel!`")
 
 
     @client.event
