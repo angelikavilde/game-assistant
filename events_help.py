@@ -44,5 +44,6 @@ These are _some_ of the commands I respond to:
 * /aff - Sends a random affirmation
 * /play - Shows events that could be activated
 * /rps - Play rock-paper-scissors with the bot
+* //lonely <channel name> - Joins the voice channel specified for 60s
 **Each event when activated has its own commands //h for help about the event**
 """
