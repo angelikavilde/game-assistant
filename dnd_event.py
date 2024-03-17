@@ -194,7 +194,10 @@ class DNDCog(Cog):
             return
         try:
             guild_id = ctx.channel.guild.id
-            await ctx.send(part_story(date, guild_id))
+            full_story = part_story(date, guild_id)
+            for part in full_story:
+                print(part)
+                # await ctx.send()
         except KeyError:
             await ctx.send("```The date entered has no data. Try //storyline```")
 
@@ -203,7 +206,9 @@ class DNDCog(Cog):
     async def show_story(self, ctx) -> None:
         """Shows all the logged story"""
         guild_id = ctx.channel.guild.id
-        await ctx.send(full_story(guild_id))
+        full_story_text = full_story(guild_id)
+        for part_of_text in full_story_text:
+            await ctx.send(part_of_text)
 
     @command(name="use_magic")
     @is_dnd_event_activated()
@@ -406,16 +411,29 @@ def log_story(story: str, guild_id: int) -> str:
     return "`Story was successfully logged!`"
 
 
-def story_table_displayed(data: DataFrame) -> str:
-    """Returns formatted stroy data from DataFrame"""
+def story_table_displayed(data: DataFrame) -> list[str]:
+    """Returns formatted story data from DataFrame"""
 
     data["date"] = data["date_time"].apply(lambda timestamp: timestamp.strftime("%d/%m"))
     data = data.drop(columns="date_time")
-    table = ""
+    table = ""; content = []
+
+    num_of_days = len(data["date"].unique())
+    #2000 max length in discord and other is extra additional needed formatting
+    max_length = 1999 - (num_of_days * 9) - 6
 
     for day in data["date"].unique():
-        table += f"`{day}`\n" + "```"
-        for row in data[data["date"] == day]["story"]:
-            table += str(row) + "\n"
+        table += f"`{day}`\n"
         table += "```"
-    return table
+        for row in data[data["date"] == day]["story"]:
+            if len(table + str(row) + "\n") < max_length:
+                table += str(row) + "\n"
+            else:
+                table += "```"
+                content.append(table)
+                table = "```"
+        if table and table != "```":
+            table += "```"
+    if table and table != "```":
+        content.append(table)
+    return content
