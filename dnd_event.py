@@ -388,23 +388,23 @@ def log_story(story: str, guild_id: int) -> str:
     """Adds story logged into the chat into the database"""
 
     split_story = story.split(" ")
-    stories = []
-    story = ""
+    split_story_cleaned = [word for word in split_story if word]
+    stories = []; story = []
 
-    for piece in split_story:
-        if len(story + piece) <= 70:
-            story += " " + piece
-        else:
-            stories.append(story.strip())
-            story = piece
-        if piece is split_story[-1]:
-            stories.append(story.strip())
+    for word in split_story_cleaned:
+        word_len = len(word)
+        if sum([len(word + " ") for word in story]) + word_len + 1 >= 70:
+            stories.append(story)
+            story = []
+        story.append(word)
+    if story:
+        stories.append(story)
 
     conn = get_db_conn()
 
     for piece in stories:
         with conn.cursor() as cur:
-            cur.execute("""INSERT INTO log_story(story, guild_id) VALUES (%s, %s)""", [piece, guild_id])
+            cur.execute("""INSERT INTO log_story(story, guild_id) VALUES (%s, %s)""", [" ".join(piece), guild_id])
             conn.commit()
     conn.close()
     return "`Story was successfully logged!`"
