@@ -196,8 +196,7 @@ class DNDCog(Cog):
             guild_id = ctx.channel.guild.id
             full_story = part_story(date, guild_id)
             for part in full_story:
-                print(part)
-                # await ctx.send()
+                await ctx.send(part)
         except KeyError:
             await ctx.send("```The date entered has no data. Try //storyline```")
 
